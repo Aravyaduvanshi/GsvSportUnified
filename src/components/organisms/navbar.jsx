@@ -42,7 +42,7 @@ export default function Navbar() {
         <a
           href="#home"
           onClick={() => setMenuOpen(false)}
-          className="flex items-center gap-3"
+          className="flex items-center gap-3 transition hover:opacity-80"
         >
           <div className="grid h-9 w-9 rotate-45 place-items-center border border-[#DFFF00]">
             <span className="-rotate-45 text-lg font-black text-[#DFFF00]">

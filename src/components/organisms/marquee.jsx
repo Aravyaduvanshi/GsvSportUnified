@@ -7,19 +7,23 @@ export default function Marquee() {
     "GAME ON",
   ]
   {/*bhaiya add if you want to add more items in the marquee, just add them to the items array above.*/}
-  
+   const repeatedItems = [...items, ...items, ...items] // Repeat the items to create a seamless loop
   return (
-    <div className="overflow-hidden border-y border-[#DFFF00]/20 bg-[#DFFF00] py-5 text-[#080909]">
-      <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 px-4 text-xs font-black tracking-widest sm:gap-x-10 sm:text-sm">
-        {items.map((item, index) => (
-          <span key={item} className="flex items-center gap-6 sm:gap-10">
+    <section
+      aria-label="Championship spirit"
+      className="overflow-hidden border-y border-[#DFFF00]/20 bg-[#DFFF00] py-5 text-[#080909]"
+    >
+      <div className="marquee-track flex w-max items-center motion-reduce:animate-none">
+        {repeatedItems.map((item, index) => (
+          <span
+            key={`${item}-${index}`}
+            className="flex shrink-0 items-center gap-6 px-6 text-xs font-black tracking-widest sm:gap-10 sm:px-10 sm:text-sm"
+          >
             {item}
-            {index !== items.length - 1 && (
-              <span aria-hidden="true">✳</span>
-            )}
+            <span aria-hidden="true">✳</span>
           </span>
         ))}
       </div>
-    </div>
+    </section>
   )
 }
