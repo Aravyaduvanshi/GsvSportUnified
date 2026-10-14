@@ -15,7 +15,7 @@ export default function PlayerCard({ player, index }) {
           <span className="text-8xl font-black text-white/10">
             0{index + 1}
           </span>
-        )}
+        )} 
 
         <span className="absolute left-4 top-4 border border-[#DFFF00]/40 px-3 py-2 text-[10px] font-bold text-[#DFFF00]">
           {player.ranking}

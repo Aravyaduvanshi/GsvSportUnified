@@ -16,7 +16,7 @@ const players = [
     wins: 10,
     image: null,
   },
-  {
+  { 
     id: 3,
     name: "PLAYER THREE",
     category: "MEN'S DOUBLES",
@@ -24,6 +24,23 @@ const players = [
     wins: 8,
     image: null,
   },
+  {
+    id: 4,
+    name: "PLAYER FOUR",
+    category: "WOMEN'S DOUBLES",
+    ranking: "#04",
+    wins: 6,
+    image: null,
+  },
+    {
+    id: 5,
+    name: "PLAYER FIVE",
+    category: "MEN'S SINGLES",
+    ranking: "#05",
+    wins: 4,
+    image: null,
+  },
+
 ]
 
 export default players
