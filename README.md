@@ -1,105 +1,144 @@
+# GSV Sports Platform — Frontend Architecture
 
-#THIS IS BADMINTON FRONTEND REPO OF GATISHAKTI VISWAVIDHYALAYA
+Centralized collegiate athletics portal for **Gati Shakti Vishwavidyalaya (GSV)**. Initially built as a specialized college badminton tournament platform, this repository is architected to scale into a unified portal spanning all campus sports: **Badminton**, **Cricket**, **Volleyball**, **Table Tennis**, **Kabaddi**, **Throwball**, **Basketball**, and future disciplines.
 
-PROJECT OVERVIEW
-Building a premium, responsive college badminton tournament website using React + Vite project, Tailwind CSS, and atomic & feature-based folder structure.
+---
 
-CURRENT ARCHITECTURE
-- React with JSX
-- Vite
-- Tailwind CSS v4 via @tailwindcss/vite
-- lucide-react for icons
-- Shared atomic components under src/components/
-- Feature modules under src/features/
-- Page composition under src/pages/
-- Reuse existing files and import paths; do not create duplicate components.
+## 1. Technology Stack
 
-CURRENT SECTIONS
-1. Navbar: responsive desktop/mobile navigation, anchor links, sticky/compact scroll state, accessible controls.
-2. Hero: cinematic badminton background, dark gradient overlays, headline and CTAs.
-3. Marquee: tournament-themed strip with reduced-motion support.
-4. Live matches: reusable cards, players, court, score and status; mark demo scores clearly.
-5. Players: reusable cards, separate data, responsive grid and player images.
-6. Tournament brackets: reusable rounds/cards, horizontal scrolling on mobile, distinguish winners and incomplete matches.
-7. Schedule: responsive fixtures, filters for All/Live/Upcoming/Completed, separate data.
-8. Footer: branding, useful links and back-to-top action.
+- **Framework**: React 19 + JSX
+- **Build Tool**: Vite 8
+- **Styling**: Tailwind CSS v4 via `@tailwindcss/vite`
+- **Routing**: React Router v7 (`createBrowserRouter`)
+- **Icons**: `lucide-react`
+- **Architecture**: Hybrid Feature-Based Architecture + Atomic Design
 
-DESIGN SYSTEM
-- Near-black background: #080909
-- Neon-lime accent: #DFFF00
-- Premium dark sports-editorial style
-- High contrast, restrained borders, consistent spacing and responsive layouts.
+---
 
-VERSION 2: GSAP ANIMATIONS
-- will be adding GSAP and use ScrollTrigger for scroll-driven effects.
-- Install JavaScript dependencies with npm; record them in package.json.
-- Clean up GSAP contexts and ScrollTriggers on unmount.
-- Respect prefers-reduced-motion.
-- Prefer transform/opacity animations and avoid unnecessary layout shifts.
-- Keep mobile scrolling, navigation and touch interactions usable.
+## 2. Design System Tokens
 
-PLANNED GSAP EFFECTS
-- Navbar: compact scroll state and subtle entrance.
-- Hero: staggered headline reveal, CTA/text entrance, subtle image parallax.
-- Marquee: optional continuous horizontal movement; simplify for reduced motion.
-- Sections: subtle fade-up/staggered reveals for player cards, match cards, schedule rows and brackets.
-- Bracket: optional sequential round reveal without breaking horizontal scrolling.
-- Avoid excessive pinning or animation that blocks access to content.
+- **Background**: `#080909` (near-black collegiate stadium dark)
+- **Primary Accent**: `#DFFF00` (high-voltage neon lime)
+- **Secondary Surfaces**: `#111313`, `#0C0E0D`
+- **Card Borders**: `border-white/10`, hover `border-[#DFFF00]/60`
+- **Typography**: Clean, high-impact athletic styling with tracking and monospace accents
 
-VERSION 2: LIVE BADMINTON COURT ANIMATION
-Goal: a top-down animated badminton court that illustrates match activity. Do not present a demo as real tracking.
+---
 
-Visual requirements:
-- Accurate court proportions and clear boundary, centre, service and singles/doubles lines.
-- Net and two player markers.
-- Shuttlecock marker with a short motion trail.
-- Optional rally path and subtle court glow.
-- Responsive scaling without distorting court geometry.
-- A legend and accessible textual status.
+## 3. Getting Started
 
-Animation requirements:
-- Animate player markers and shuttlecock along controlled paths.
-- Use GSAP timelines for choreographed demo rallies.
-- Play, pause and replay controls; optional speed control.
-- Pause when off-screen where practical.
-- Respect reduced-motion settings.
-- Keeping animation smooth; avoid unnecessary React re-renders.
-- Using SVG or CSS for the court and animate marker transforms with GSAP.
-- Suggested component: src/features/live/components/LiveCourt.jsx
-- Suggested demo sequence data: src/features/live/data/rallyData.js
+### Prerequisites
+- Node.js (v18+ recommended)
+- npm (v9+)
 
-LIVE DATA INTEGRATION
-- Clearly label demo rallies and scores.
-- Real-time scores need a trusted backend/API or authorized data source.
-- Real player/shuttle tracking needs tracking data or computer-vision input; GSAP alone does not provide real tracking.
-- Keep an adapter layer so demo sequences can later be replaced with timestamped tracking events.
-- Add loading, unavailable and connection-error states if a live feed is integrated.
-- Never invent real scores, player positions or match status.
+### Installation
+Clone the repository and install dependencies:
 
-ACCESSIBILITY AND QUALITY
-- Semantic HTML, meaningful alt text, keyboard-accessible controls and visible focus states.
-- Sufficient contrast; do not rely on color alone for status.
-- Respect prefers-reduced-motion.
-- No console errors or missing imports.
-- Verify anchor targets, mobile menu, filters and court controls.
-- Ensure `npm run build` succeeds.
+```bash
+npm install
+```
 
-IMPLEMENTATION ORDER
-1. Stabilize the existing navbar, hero, marquee, live matches, players, brackets, schedule and footer.
-2. Verify responsive layout, imports, data shapes and production build.
-3. Install GSAP.
-4. Add scoped hero and section animations.
-5. Build the SVG/CSS top-down animated court.
-6. Add play/pause/replay and reduced-motion behavior.
-7. Connect authorized live data if available.
-8. Optimize and test desktop/mobile behavior.
+### Development Server
+Run Vite in development mode:
 
-DEPENDENCIES
-For this React/Vite project, install packages with npm and keep them in package.json.
-Planned animation dependency:
-  npm install gsap
+```bash
+npm run dev
+```
 
-Use GSAP's ScrollTrigger plugin from the installed gsap package. Add other packages only when needed.
+### Production Build
+Compile and bundle the production assets:
 
-NOTE
-This file documents project requirements. It is not a Python pip requirements file.
+```bash
+npm run build
+```
+
+### Preview Production Build
+```bash
+npm run preview
+```
+
+---
+
+## 4. Main Routes
+
+| URL Route | Experience | Description |
+| :--- | :--- | :--- |
+| `/` | **Central Landing Page** | Global hero, sport selection grid, live/upcoming match highlights |
+| `/sports` | **Sports Directory** | Catalog of all 7 collegiate sports with status filtering |
+| `/sports/badminton` | **Badminton Championship** | **100% Preserved original experience**: Hero, Marquee, LiveMatch, Schedule, PlayerGrid, Brackets, and anchor navigation |
+| `/sports/cricket` | **Cricket Arena** | Inter-departmental T20 championship arena |
+| `/sports/volleyball` | **Volleyball Super Cup** | Set scores and tournament information |
+| `/sports/table-tennis` | **Table Tennis Open** | Singles & doubles clash schedule |
+| `/sports/kabaddi` | **Kabaddi Championship** | Raid timer & tackle points portal |
+| `/sports/throwball` | **Throwball Tournament** | Women's inter-hostel tournament |
+| `/sports/basketball` | **Basketball Classic** | 5v5 league standings and quarter scores |
+| `/matches` | **Match Calendar** | All fixtures, status filters (Live/Upcoming/Completed) |
+| `/matches/:matchId` | **Match Details** | Stadium scoreboard and player head-to-head |
+| `/tournaments` | **Tournament Center** | Knockout trees and bracket ladders |
+| `/student` | **Student Portal** | Student athlete schedule and bookmarks |
+| `/admin` | **Super Admin Console** | Tournament creation and admin assignment stub |
+| `/sport-admin` | **Sport Scorekeeper** | Court-side live score input stub |
+
+---
+
+## 5. Folder Architecture
+
+```text
+sports-platform/
+├── public/                 # Static assets (favicons, SVG icons)
+├── src/
+│   ├── app/                # App bootstrap, router.jsx, providers.jsx, App.jsx
+│   ├── assets/             # Bundled images, icons, and fonts
+│   │   └── images/         # Badminton hero image, player cards, highlights
+│   ├── components/         # Atomic Design reusable components
+│   │   ├── atoms/          # Button, Badge, Icon, LiveDot
+│   │   ├── molecules/      # SportCard, MatchCard, ScoreDisplay
+│   │   ├── organisms/      # Navbar, Footer, SportGrid
+│   │   └── shared/         # LoadingState, EmptyState, ErrorState, NotFound
+│   ├── layouts/            # PublicLayout, StudentLayout, SuperAdminLayout, SportAdminLayout
+│   ├── features/           # Feature-based business domains
+│   │   ├── home/           # HomePage and landing sections
+│   │   ├── sports/         # Central sports registry (sports.data.js) & directory
+│   │   ├── badminton/      # Original badminton experience (100% preserved)
+│   │   ├── cricket/        # Cricket arena
+│   │   ├── volleyball/     # Volleyball arena
+│   │   ├── table-tennis/   # Table tennis arena
+│   │   ├── kabaddi/        # Kabaddi arena
+│   │   ├── throwball/      # Throwball arena
+│   │   ├── basketball/     # Basketball arena
+│   │   ├── matches/        # Fixture list and match details
+│   │   ├── tournaments/    # Brackets and tournaments
+│   │   ├── student/        # Student dashboard stub
+│   │   ├── super-admin/    # Super admin console stub
+│   │   └── sport-admin/    # Sport scorekeeper stub
+│   ├── styles/             # Global styling (globals.css)
+│   └── main.jsx            # Application entry point
+├── docs/                   # Developer documentation
+│   ├── PROJECT_STRUCTURE.md
+│   ├── ROUTING_GUIDE.md
+│   ├── COMPONENT_GUIDE.md
+│   └── ADDING_A_NEW_SPORT.md
+├── .env.example
+├── package.json
+└── vite.config.js
+```
+
+---
+
+## 6. Developer Documentation
+
+Comprehensive documentation has been prepared to guide new engineers:
+- [Project Structure Guide](file:///docs/PROJECT_STRUCTURE.md): Component rules, layer boundaries, and circular import prevention.
+- [Routing Guide](file:///docs/ROUTING_GUIDE.md): Layout binding, route table, and how to add routes.
+- [Component Guide](file:///docs/COMPONENT_GUIDE.md): Atomic design implementation with code examples.
+- [Adding a New Sport](file:///docs/ADDING_A_NEW_SPORT.md): 7-step guide to integrate any new campus sport.
+
+---
+
+## 7. Version 2 Roadmap (GSAP & Visual Upgrade)
+
+This restructuring is the structural foundation for upcoming visual enhancements:
+- GSAP and ScrollTrigger animations (staggered headline reveals, card entrances).
+- Animated top-down SVG badminton court.
+- WebSocket / SSE live scoring integration with backend APIs.
+- Real-time tournament bracket updates.

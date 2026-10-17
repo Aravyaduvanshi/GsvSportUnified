@@ -1,14 +1,4 @@
-
-import Navbar from "./components/organisms/navbar"
-import Home from "./pages/home"
-
-export default function App() {
-  return (
-    <>
-      <Navbar />
-      <Home />
-    </>
-  )
-}
-
-
+/**
+ * Legacy entry point re-exporting the modular app from src/app/App.jsx
+ */
+export { default } from "./app/App"

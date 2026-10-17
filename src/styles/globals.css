@@ -1,0 +1,86 @@
+
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 90px;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #080909;
+  color: #f5f7f2;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: #dfff00;
+  color: #080909;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.marquee-track {
+  animation: marquee-scroll 20s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+:root {
+  /* Backgrounds */
+  --color-bg: #0A0A0A;
+  --color-surface: #111111;
+  --color-grid: #151515;
+
+  /* Brand */
+  --color-accent: #07F080;
+  --color-accent-hover: #00D875;
+  --color-accent-dark: #063D29;
+
+  /* Typography */
+  --color-text-primary: #FAFAFA;
+  --color-text-secondary: #858585;
+
+  /* Borders */
+  --color-border: #292929;
+}
