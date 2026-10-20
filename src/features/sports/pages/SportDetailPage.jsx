@@ -6,6 +6,8 @@
 import { useParams } from "react-router-dom"
 import { getSportById } from "../data/sports.data"
 import BadmintonPage from "../../badminton/pages/BadmintonPage"
+import CricketPage from "../../cricket/pages/CricketPage"
+import BasketballPage from "../../basketball/pages/BasketballPage"
 import Button from "../../../components/atoms/Button"
 import Badge from "../../../components/atoms/Badge"
 
@@ -16,7 +18,7 @@ export default function SportDetailPage() {
   if (!sport) {
     return (
       <div className="mx-auto max-w-4xl px-6 py-24 text-center">
-        <p className="text-xs font-bold tracking-widest text-[#DFFF00]">UNKNOWN SPORT</p>
+        <p className="text-xs font-bold tracking-widest text-[#07F080]">UNKNOWN SPORT</p>
         <h1 className="mt-3 text-4xl font-black text-white">SPORT NOT FOUND</h1>
         <p className="mt-4 text-sm text-gray-400">The sport '{sportId}' is not registered in the college platform.</p>
         <div className="mt-8">
@@ -26,9 +28,17 @@ export default function SportDetailPage() {
     )
   }
 
-  // Badminton has its own dedicated feature page
+  // Dedicated sport experiences
   if (sport.id === "badminton") {
     return <BadmintonPage />
+  }
+
+  if (sport.id === "cricket") {
+    return <CricketPage />
+  }
+
+  if (sport.id === "basketball") {
+    return <BasketballPage />
   }
 
   // Placeholder for upcoming sports

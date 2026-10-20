@@ -7,10 +7,9 @@ import { Link, useLocation } from "react-router-dom"
 
 const navLinks = [
   { label: "HOME", path: "/" },
-  { label: "SPORTS", path: "/sports" },
+  { label: "ALL SPORTS", path: "/sports" },
   { label: "MATCHES", path: "/matches" },
   { label: "TOURNAMENTS", path: "/tournaments" },
-  { label: "STUDENT", path: "/student" },
 ]
 
 export default function Navbar() {
@@ -27,8 +26,6 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
-
 
   const isActive = (path) => {
     if (path === "/") return location.pathname === "/"
@@ -66,7 +63,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden items-center gap-7 lg:flex">
+        <div className="hidden items-center gap-5 xl:gap-7 lg:flex">
           {navLinks.map((link) => (
             <Link
               key={link.label}
@@ -82,24 +79,18 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Quick link to live Badminton hub & Admin */}
-        <div className="hidden items-center gap-3 sm:flex">
-          <Link
-            to="/sports/badminton"
-            className="flex items-center gap-2 border border-[#07F080]/40 bg-[#07F080]/10 px-4 py-2 text-[10px] font-bold tracking-widest text-[#07F080] transition hover:bg-[#07F080] hover:text-black"
-          >
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[#07F080]" />
-            BADMINTON LIVE
-          </Link>
-
-          <Link
-            to="/admin"
-            className="border border-white/15 px-3 py-2 text-[10px] font-bold tracking-widest text-gray-400 transition hover:text-white hover:border-white/40"
-          >
-            ADMIN
-          </Link>
-        </div>
-
+        {/* Admin Links and super admin */}
+        <div className="pt-1 flex items-center gap-3">
+            <Link
+              to="/admin-access"
+              className="flex items-center gap-2 border border-white/20 bg-white/[0.04] px-3 py-2 text-[9px] font-bold tracking-widest text-white transition hover:border-[#07F080] hover:text-[#07F080]"
+            >
+              <span className="grid h-5 w-5 place-items-center border border-current text-[10px]">
+                ↗
+              </span>
+              ADMIN ACCESS
+            </Link>
+          </div>
         {/* Mobile menu trigger */}
         <button
           type="button"
@@ -125,6 +116,7 @@ export default function Navbar() {
             <Link
               key={link.label}
               to={link.path}
+              onClick={() => setMenuOpen(false)}
               className={`block border-b border-white/10 pb-3 text-xs font-bold tracking-widest ${
                 isActive(link.path) ? "text-[#07F080]" : "text-gray-300 hover:text-[#07F080]"
               }`}
@@ -133,26 +125,14 @@ export default function Navbar() {
             </Link>
           ))}
 
-          <Link
-            to="/sports/badminton"
-            className="flex items-center gap-2 pt-2 text-xs font-bold tracking-widest text-[#07F080]"
-          >
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[#07F080]" />
-            BADMINTON CHAMPIONSHIP
-          </Link>
-
+        
           <div className="pt-4 flex items-center gap-3">
             <Link
-              to="/admin"
-              className="border border-white/20 px-4 py-2 text-[10px] font-bold tracking-widest text-gray-300"
-            >
-              SUPER ADMIN
-            </Link>
-            <Link
-              to="/sport-admin"
-              className="border border-white/20 px-4 py-2 text-[10px] font-bold tracking-widest text-gray-300"
-            >
-              SPORT ADMIN
+             to="/admin-access"
+             onClick={() => setMenuOpen(false)}
+             className="flex w-fit items-center gap-2 border border-[#07F080]/40 bg-[#07F080]/10 px-4 py-3 text-[10px] font-bold tracking-widest text-[#07F080] transition hover:bg-[#07F080] hover:text-black">
+             <span>↗</span>
+             ADMIN ACCESS
             </Link>
           </div>
         </div>

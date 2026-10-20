@@ -5,10 +5,13 @@
  */
 import { useState } from "react"
 import SportGrid from "../../../components/organisms/SportGrid"
-import { sports } from "../data/sports.data"
+import { sports, getAvailableSports, getComingSoonSports } from "../data/sports.data"
 
 export default function SportsPage() {
   const [filter, setFilter] = useState("all") // 'all' | 'available' | 'coming-soon'
+
+  const availableCount = getAvailableSports().length
+  const comingSoonCount = getComingSoonSports().length
 
   const filteredSports = sports.filter((s) => {
     if (filter === "available") return s.status === "available"
@@ -54,7 +57,7 @@ export default function SportsPage() {
               : "border-white/10 text-gray-400 hover:text-white hover:border-white/30"
           }`}
         >
-          LIVE NOW (1)
+          ACTIVE HUBS ({availableCount})
         </button>
 
         <button
@@ -66,7 +69,7 @@ export default function SportsPage() {
               : "border-white/10 text-gray-400 hover:text-white hover:border-white/30"
           }`}
         >
-          COMING SOON (6)
+          COMING SOON ({comingSoonCount})
         </button>
       </div>
 

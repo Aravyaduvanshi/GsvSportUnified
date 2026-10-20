@@ -10,12 +10,14 @@ export const sports = [
     shortName: "BADMINTON",
     description: "High-intensity collegiate singles and doubles championship with live match scoring and brackets.",
     path: "/sports/badminton",
+    directPath: "/badminton",
     status: "available",
-    season: "Active Season",
+    season: "Championship 2026",
     courts: "Courts 1, 2 & 3",
     tagline: "Point by point. Every smash counts.",
     featured: true,
     accentColor: "#DFFF00",
+    themeClass: "badminton",
   },
   {
     id: "cricket",
@@ -23,12 +25,29 @@ export const sports = [
     shortName: "CRICKET",
     description: "T20 inter-department and inter-collegiate tournament fixtures, live ball-by-ball updates and scorecards.",
     path: "/sports/cricket",
-    status: "coming-soon",
-    season: "Winter 2026",
+    directPath: "/cricket",
+    status: "available",
+    season: "GSV T20 Trophy 2026",
     courts: "Main Oval Ground",
     tagline: "The battle for collegiate cricket supremacy.",
     featured: true,
-    accentColor: "#38BDF8",
+    accentColor: "#07F080",
+    themeClass: "cricket",
+  },
+  {
+    id: "basketball",
+    name: "Basketball",
+    shortName: "BASKETBALL",
+    description: "Full-court collegiate 5v5 basketball league, conference playoffs, and buzzer-beater action.",
+    path: "/sports/basketball",
+    directPath: "/basketball",
+    status: "available",
+    season: "Hoops Classic 2026-27",
+    courts: "North Hardcourt Complex",
+    tagline: "Dribble, shoot, and conquer the rim.",
+    featured: true,
+    accentColor: "#F97316",
+    themeClass: "basketball",
   },
   {
     id: "volleyball",
@@ -40,7 +59,7 @@ export const sports = [
     season: "Winter 2026",
     courts: "Volleyball Court A & B",
     tagline: "Spike, block, and dominate the net.",
-    featured: true,
+    featured: false,
     accentColor: "#FB923C",
   },
   {
@@ -53,7 +72,7 @@ export const sports = [
     season: "Spring 2027",
     courts: "Indoor Sports Complex T1-T4",
     tagline: "Precision, spin, and lightning-fast reflexes.",
-    featured: true,
+    featured: false,
     accentColor: "#A855F7",
   },
   {
@@ -66,7 +85,7 @@ export const sports = [
     season: "Spring 2027",
     courts: "Kabaddi Arena 1",
     tagline: "Strength, strategy, and unyielding grit.",
-    featured: true,
+    featured: false,
     accentColor: "#F43F5E",
   },
   {
@@ -82,21 +101,9 @@ export const sports = [
     featured: false,
     accentColor: "#34D399",
   },
-  {
-    id: "basketball",
-    name: "Basketball",
-    shortName: "BASKETBALL",
-    description: "Full-court collegiate 5v5 basketball league, conference playoffs, and buzzer-beater action.",
-    path: "/sports/basketball",
-    status: "coming-soon",
-    season: "Spring 2027",
-    courts: "Basketball Court (North)",
-    tagline: "Dribble, shoot, and conquer the rim.",
-    featured: false,
-    accentColor: "#FBBF24",
-  },
 ]
 
 export const getSportById = (id) => sports.find((sport) => sport.id === id)
 export const getAvailableSports = () => sports.filter((sport) => sport.status === "available")
 export const getComingSoonSports = () => sports.filter((sport) => sport.status === "coming-soon")
+export const getHeadlineSports = () => sports.filter((sport) => ["badminton", "cricket", "basketball"].includes(sport.id))

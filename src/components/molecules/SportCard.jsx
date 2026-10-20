@@ -51,7 +51,8 @@ export default function SportCard({ sport }) {
         {isAvailable ? (
           <Link
             to={sport.path}
-            className="inline-flex items-center gap-2 text-[10px] font-black tracking-widest text-[#DFFF00] transition-transform duration-300 group-hover:translate-x-1"
+            className="inline-flex items-center gap-2 text-[10px] font-black tracking-widest transition-transform duration-300 group-hover:translate-x-1"
+            style={{ color: sport.accentColor || "#07F080" }}
           >
             ENTER SPORT <span aria-hidden="true">→</span>
           </Link>

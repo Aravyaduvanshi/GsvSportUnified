@@ -142,3 +142,22 @@ This restructuring is the structural foundation for upcoming visual enhancements
 - Animated top-down SVG badminton court.
 - WebSocket / SSE live scoring integration with backend APIs.
 - Real-time tournament bracket updates.
+
+
+
+## 8.FREEING LOCAL STORAGE OF THE BROWSER
+
+  ```BASH 
+  Object.keys(localStorage)
+  .filter(
+    (key) =>
+      key === "gsv_admin_matches_store" ||
+      key.startsWith("gsv_match_events_store_")
+  )
+  .forEach((key) => localStorage.removeItem(key));
+
+location.reload();
+```
+
+
+## 9. LOCAL STORAGE HAS BEEN USED FOR TEMPORARY STORAGE OF THE MATCH DATA AND SCORING 

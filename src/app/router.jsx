@@ -34,6 +34,10 @@ import TournamentDetailPage from "../features/tournaments/pages/TournamentDetail
 import StudentDashboard from "../features/student/pages/StudentDashboard"
 import SuperAdminDashboard from "../features/super-admin/pages/SuperAdminDashboard"
 import SportAdminDashboard from "../features/sport-admin/pages/SportAdminDashboard"
+import AdminAccessPage from "../features/match-control/pages/AdminAccessPage"
+
+import AssignedMatchesDashboard from "../features/match-control/pages/AssignedMatchesDashboard"
+import MatchControlPage from "../features/match-control/pages/MatchControlPage"
 
 // Shared
 import NotFound from "../components/shared/NotFound"
@@ -53,10 +57,6 @@ export const router = createBrowserRouter([
         element: <SportsPage />,
       },
       {
-        path: "sports/cricket",
-        element: <CricketPage />,
-      },
-      {
         path: "sports/volleyball",
         element: <VolleyballPage />,
       },
@@ -71,10 +71,6 @@ export const router = createBrowserRouter([
       {
         path: "sports/throwball",
         element: <ThrowballPage />,
-      },
-      {
-        path: "sports/basketball",
-        element: <BasketballPage />,
       },
       {
         path: "sports/:sportId",
@@ -108,6 +104,35 @@ export const router = createBrowserRouter([
     path: "/sports/badminton",
     element: <BadmintonPage />,
   },
+  {
+    path: "/badminton",
+    element: <BadmintonPage />,
+  },
+
+  // Dedicated Cricket Experience
+  {
+    path: "/sports/cricket",
+    element: <CricketPage />,
+  },
+  {
+    path: "/cricket",
+    element: <CricketPage />,
+  },
+
+  // Dedicated Basketball Experience
+  {
+    path: "/sports/basketball",
+    element: <BasketballPage />,
+  },
+  {
+    path: "/basketball",
+    element: <BasketballPage />,
+  },
+// Admin Access Page (for match control and admin login)
+  {
+  path: "/admin-access",
+  element: <AdminAccessPage />,
+},
 
   // Student Interface
   {
@@ -134,16 +159,20 @@ export const router = createBrowserRouter([
   },
 
   // Sport Admin Interface
-  {
-    path: "/sport-admin",
-    element: <SportAdminLayout />,
-    children: [
-      {
-        index: true,
-        element: <SportAdminDashboard />,
-      },
-    ],
-  },
+{
+  path: "/sport-admin",
+  element: <SportAdminLayout />,
+  children: [
+    {
+      index: true,
+      element: <AssignedMatchesDashboard />,
+    },
+    {
+      path: "matches/:matchId/control",
+      element: <MatchControlPage />,
+    },
+  ],
+},
 ])
 
 export default router
