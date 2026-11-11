@@ -1,4 +1,3 @@
-
 const bracket = [
   {
     title: "QUARTERFINALS",
@@ -14,10 +13,10 @@ const bracket = [
       {
         id: 2,
         player1: "Dev Mehta",
-        player2: "tushar bhaiya",
+        player2: "Tushar Roy",
         score1: 18,
         score2: 21,
-        winner: "tushar bhaiya",
+        winner: "Tushar Roy",
       },
     ],
   },

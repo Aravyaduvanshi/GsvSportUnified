@@ -31,7 +31,7 @@ const SPORT_META = {
   },
 }
 
-export default function MatchControlHeader({ currentUser, match }) {
+export default function MatchControlHeader({ currentUser, match, assignedMatches = [], onResetMatch }) {
   const sport = SPORT_META[match?.sport] || SPORT_META.badminton
 
   return (
@@ -99,6 +99,47 @@ export default function MatchControlHeader({ currentUser, match }) {
           </Link>
         </div>
       </div>
+
+      {/* Quick Match Switcher Bar */}
+      {assignedMatches && assignedMatches.length > 1 && (
+        <div className="border-t border-[#1C273B] bg-[#101724] px-4 py-2 sm:px-8 flex items-center justify-between gap-3 overflow-x-auto">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[10px] font-mono font-bold tracking-wider text-[#8491A7]">
+              SWITCH MATCH:
+            </span>
+            <div className="flex items-center gap-2">
+              {assignedMatches.map((m) => {
+                const isActive = m.id === match.id
+                return (
+                  <Link
+                    key={m.id}
+                    to={`/sport-admin/matches/${m.id}/control`}
+                    className={`inline-flex items-center gap-2 px-3 py-1 rounded text-[10px] font-mono font-bold transition whitespace-nowrap ${
+                      isActive
+                        ? "border border-[#DFFF00] bg-[#DFFF00]/20 text-[#DFFF00]"
+                        : "border border-[#25334B] bg-[#17243A] text-gray-300 hover:text-white hover:border-[#8491A7]"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 rounded-full ${m.status === "LIVE" ? "bg-emerald-400 animate-pulse" : "bg-gray-400"}`} />
+                    <span>{m.court || m.id}: {m.teamA?.shortName || m.teamA?.name} vs {m.teamB?.shortName || m.teamB?.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+
+          {onResetMatch && (
+            <button
+              type="button"
+              onClick={onResetMatch}
+              title="Reset scores for this match back to 0-0"
+              className="shrink-0 border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded text-[10px] font-mono font-bold flex items-center gap-1.5 transition cursor-pointer"
+            >
+              <span>↺ RESTART MATCH (0-0)</span>
+            </button>
+          )}
+        </div>
+      )}
     </header>
   )
 }

@@ -6,8 +6,7 @@ export default function Marquee() {
     "FEARLESS",
     "GAME ON",
   ]
-  {/*bhaiya add if you want to add more items in the marquee, just add them to the items array above.*/}
-   const repeatedItems = [...items, ...items, ...items] // Repeat the items to create a seamless loop
+  const repeatedItems = [...items, ...items, ...items] // Seamless looping items
   return (
     <section
       aria-label="Championship spirit"

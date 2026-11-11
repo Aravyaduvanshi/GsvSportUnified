@@ -8,15 +8,17 @@
 import { useState, useEffect, useCallback } from "react"
 import { useParams, Link } from "react-router-dom"
 import { ShieldAlert, ArrowLeft, RefreshCw, CheckCircle2 } from "lucide-react"
-import { getCurrentAdminUser } from "../services/adminAuthService"
+import { getCurrentAdminUser, setCurrentAdminUser } from "../services/adminAuthService"
 import {
   getAuthorizedMatch,
   applyScoringEvent,
   undoLastScoringEvent,
   updateMatchStatus,
+  recordMatchFault,
+  getAssignedMatches,
+  resetMatchToZero,
+  switchServerInMatch,
 } from "../services/matchControlService"
-
-import { recordMatchFault } from "../services/matchControlService"
 import ThrowballCourtControl from "../components/ThrowballCourtControl"
 
 import MatchControlHeader from "../components/MatchControlHeader"
@@ -34,6 +36,27 @@ export default function MatchControlPage() {
   const [errorState, setErrorState] = useState(null)
   const [feedbackMsg, setFeedbackMsg] = useState(null)
   const [isPending, setIsPending] = useState(false)
+
+  // Switch scorekeeper account and re-evaluate authorization
+  const handleSwitchUser = (userId) => {
+    const user = setCurrentAdminUser(userId)
+    if (user) {
+      setCurrentUser(user)
+      setErrorState(null)
+      try {
+        const { match, events: evtLog } = getAuthorizedMatch(user, matchId)
+        setMatchData(match)
+        setEvents(evtLog)
+        setFeedbackMsg({
+          type: "success",
+          text: `Switched scorekeeper account to ${user.name}.`,
+        })
+        setTimeout(() => setFeedbackMsg(null), 3000)
+      } catch (err) {
+        setErrorState(err.message || "Failed to load match.")
+      }
+    }
+  }
 
   // Load authoritative match data with authorization check
   const loadMatch = useCallback(() => {
@@ -169,6 +192,61 @@ const handleRecordFault = (faultData) => {
     }
   }
 
+  // Handle resetting match scores back to 0-0
+  const handleResetMatch = () => {
+    try {
+      setIsPending(true)
+      const { match, events: updatedEvents } = resetMatchToZero(
+        currentUser,
+        matchId
+      )
+      setMatchData(match)
+      setEvents(updatedEvents)
+      setFeedbackMsg({
+        type: "success",
+        text: "Match scores reset to 0-0.",
+      })
+      setTimeout(() => setFeedbackMsg(null), 3000)
+    } catch (err) {
+      console.error("Failed to reset match:", err)
+      setFeedbackMsg({
+        type: "error",
+        text: err.message || "Failed to reset match.",
+      })
+      setTimeout(() => setFeedbackMsg(null), 3000)
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  // Handle switching server and service court box
+  const handleSwitchServer = (side, court) => {
+    try {
+      setIsPending(true)
+      const { match, events: updatedEvents } = switchServerInMatch(
+        currentUser,
+        matchId,
+        { side, court }
+      )
+      setMatchData(match)
+      setEvents(updatedEvents)
+      setFeedbackMsg({
+        type: "success",
+        text: `Service switched to ${side === "A" ? match.teamA.name : match.teamB.name} (${match.servingCourt} Box)`,
+      })
+      setTimeout(() => setFeedbackMsg(null), 2500)
+    } catch (err) {
+      console.error("Failed to switch server:", err)
+      setFeedbackMsg({
+        type: "error",
+        text: err.message || "Failed to switch server.",
+      })
+      setTimeout(() => setFeedbackMsg(null), 3000)
+    } finally {
+      setIsPending(false)
+    }
+  }
+
   // --- 403 ACCESS DENIED STATE (Strict Security Boundary) ---
   if (errorState && errorState.startsWith("FORBIDDEN")) {
     return (
@@ -242,13 +320,16 @@ const handleRecordFault = (faultData) => {
     )
   }
 
+  const assignedMatches = getAssignedMatches(currentUser)
+
   return (
     <div className="min-h-screen bg-[#080D18] text-[#F4F6FA] flex flex-col font-sans select-none">
       {/* 1. Charcoal Top Header (Directly inspired by reference screenshot) */}
       <MatchControlHeader
         currentUser={currentUser}
-        
         match={matchData}
+        assignedMatches={assignedMatches}
+        onResetMatch={handleResetMatch}
       />
 
       {/* 2. Scoreboard Strip (Team A in amber, VS in center, Team B in cyan) */}
@@ -280,6 +361,7 @@ const handleRecordFault = (faultData) => {
                 match={matchData}
                 onScorePoint={handleScoringAction}
                 onUndo={handleUndo}
+                onSwitchServer={handleSwitchServer}
                 isPending={isPending}
               />
             )}

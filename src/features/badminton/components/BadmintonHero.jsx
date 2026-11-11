@@ -46,7 +46,7 @@ export default function Hero() {
         <div className="mt-9 flex flex-wrap items-center gap-4">
           <a
             href="#live"
-            className="inline-flex items-center gap-3 bg-[#4f571a] px-6 py-4 text-[10px] font-black tracking-widest text-[#070707] transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_30px_#DFFF0030]"
+            className="inline-flex items-center gap-3 bg-[#DFFF00] px-6 py-4 text-[10px] font-black tracking-widest text-[#070707] transition duration-300 hover:-translate-y-1 hover:shadow-[0_10px_30px_#DFFF0030]"
           >
             EXPLORE LIVE SCORES
             <span aria-hidden="true">↗</span>

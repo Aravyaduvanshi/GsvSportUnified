@@ -1,14 +1,33 @@
-
-import { useState } from "react"
-import scheduleData from "../data/schedule"
+import { useState, useEffect } from "react"
+import initialScheduleData from "../data/schedule"
 import ScheduleRow from "./BadmintonScheduleRow"
+import { fetchBadmintonSchedule } from "../services/badmintonApiService"
 
 const filters = ["ALL", "LIVE", "UPCOMING", "COMPLETED"]
 
 export default function Schedule() {
   const [activeFilter, setActiveFilter] = useState("ALL")
+  const [matches, setMatches] = useState(initialScheduleData)
 
-  const filteredMatches = scheduleData.filter(
+  // Fetch matches / previous matches from Kotlin backend whenever filter changes
+  useEffect(() => {
+    let isMounted = true
+
+    async function loadMatches() {
+      const data = await fetchBadmintonSchedule(activeFilter)
+      if (isMounted && data && data.length > 0) {
+        setMatches(data)
+      }
+    }
+
+    loadMatches()
+
+    return () => {
+      isMounted = false
+    }
+  }, [activeFilter])
+
+  const filteredMatches = matches.filter(
     (match) =>
       activeFilter === "ALL" || match.status === activeFilter
   )
@@ -29,13 +48,16 @@ export default function Schedule() {
 
             <h2 className="mt-5 text-5xl font-black uppercase sm:text-7xl">
               MATCH
-              <span className="block text-[#DFFF00]">SCHEDULE.</span>
+              <span className="block text-[#DFFF00]">
+                {activeFilter === "COMPLETED" ? "RESULTS." : "SCHEDULE."}
+              </span>
             </h2>
           </div>
 
           <p className="max-w-xs text-sm leading-6 text-gray-400">
-            Every fixture. Every court. Follow the road
-            to the championship.
+            {activeFilter === "COMPLETED"
+              ? "All previous match outcomes, sets won, and official championship scores."
+              : "Every fixture. Every court. Follow the road to the championship."}
           </p>
         </div>
 
@@ -47,13 +69,13 @@ export default function Schedule() {
               type="button"
               onClick={() => setActiveFilter(filter)}
               aria-pressed={activeFilter === filter}
-              className={`border px-4 py-3 text-[9px] font-bold tracking-widest transition ${
+              className={`border px-4 py-3 text-[9px] font-bold tracking-widest transition cursor-pointer ${
                 activeFilter === filter
                   ? "border-[#DFFF00] bg-[#DFFF00] text-black"
                   : "border-white/10 text-gray-400 hover:border-[#DFFF00]/50 hover:text-white"
               }`}
             >
-              {filter}
+              {filter === "COMPLETED" ? "PREVIOUS MATCHES" : filter}
             </button>
           ))}
         </div>
@@ -79,7 +101,7 @@ export default function Schedule() {
         </div>
 
         <p className="mt-5 text-[10px] tracking-widest text-gray-500">
-          SHOWING {filteredMatches.length} OF {scheduleData.length} MATCHES
+          SHOWING {filteredMatches.length} OF {matches.length} MATCHES
         </p>
       </div>
     </section>

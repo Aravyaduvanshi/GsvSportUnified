@@ -6,6 +6,7 @@
  */
 import { useState } from "react"
 import { Undo2, RotateCw } from "lucide-react"
+import BadmintonCourtVisual from "../../badminton/components/BadmintonCourtVisual"
 
 const actionTypes = [
   { id: "Rally", label: "Rally Winner", icon: "🏸" },
@@ -19,10 +20,10 @@ export default function BadmintonCourtControl({
   match,
   onScorePoint,
   onUndo,
+  onSwitchServer,
   isPending = false,
 }) {
   const [selectedType, setSelectedType] = useState("Smash")
-  const [serverSide, setServerSide] = useState("A")
 
   const handlePoint = (side) => {
     onScorePoint({
@@ -34,60 +35,12 @@ export default function BadmintonCourtControl({
 
   return (
     <div className="flex flex-col h-full justify-between">
-      {/* Court Diagram Visual (Matches reference screenshot's warm court surface) */}
-      <div className="relative w-full aspect-[16/9] max-h-[380px] bg-[#C18844] rounded-lg border-2 border-[#8E5E2A] p-4 flex flex-col justify-between overflow-hidden shadow-inner">
-        {/* Court Markings SVG */}
-        <svg className="absolute inset-0 h-full w-full pointer-events-none" preserveAspectRatio="none">
-          {/* Outer Boundary */}
-          <rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeOpacity="0.8" />
-          {/* Singles sideline */}
-          <line x1="12%" y1="5%" x2="12%" y2="95%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.7" />
-          <line x1="88%" y1="5%" x2="88%" y2="95%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.7" />
-          {/* Net Line (dashed like screenshot) */}
-          <line x1="5%" y1="50%" x2="95%" y2="50%" stroke="#FFFFFF" strokeWidth="2.5" strokeDasharray="8 6" strokeOpacity="0.9" />
-          {/* Center Line Top & Bottom */}
-          <line x1="50%" y1="5%" x2="50%" y2="35%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.6" />
-          <line x1="50%" y1="65%" x2="50%" y2="95%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.6" />
-          {/* Short Service Lines */}
-          <line x1="5%" y1="35%" x2="95%" y2="35%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.6" />
-          <line x1="5%" y1="65%" x2="95%" y2="65%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.6" />
-        </svg>
-
-        {/* Top Half (Team B / Opponent) */}
-        <div className="relative z-10 flex items-center justify-around h-1/2">
-          <div className="flex flex-col items-center">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border-2 border-white/80 bg-white/20 flex flex-col items-center justify-center text-white backdrop-blur-sm shadow">
-              <span className="text-[10px] font-black">{match.teamB.shortName}</span>
-              <span className="text-[8px] opacity-80">
-               {serverSide === "B" ? "SRV" : "DEF"}
-              </span>
-            </div>
-            <span className="mt-1 text-[10px] font-bold text-white bg-black/40 px-2 py-0.5 rounded">
-              {match.teamB.name}
-            </span>
-          </div>
-        </div>
-
-        {/* Bottom Half (Team A / Server) */}
-        <div className="relative z-10 flex items-center justify-around h-1/2">
-          <div className="flex flex-col items-center">
-            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full border-2 border-[#FFAE00] bg-[#FFAE00]/30 flex flex-col items-center justify-center text-white backdrop-blur-sm shadow">
-              <span className="text-[10px] font-black">{match.teamA.shortName}</span>
-              <span className="text-[8px] opacity-80">
-                {serverSide === "A" ? "SRV" : "DEF"}
-               </span>
-            </div>
-            <span className="mt-1 text-[10px] font-bold text-white bg-black/40 px-2 py-0.5 rounded">
-              {match.teamA.name}
-            </span>
-          </div>
-        </div>
-
-        {/* Court side label */}
-        <div className="absolute bottom-2 left-4 text-[9px] font-mono tracking-widest text-white/60 uppercase">
-          {match.court} · SET {match.currentSet}
-        </div>
-      </div>
+      {/* Official BWF Badminton Court Visual (Live Server, Service Court Box & Trajectory) */}
+      <BadmintonCourtVisual
+        match={match}
+        interactive={true}
+        onSwitchServer={onSwitchServer}
+      />
 
       {/* Action Type Selector Row (Directly matches "Type: [Kill] [Ace] [Block] [Error]" from screenshot) */}
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
@@ -109,36 +62,63 @@ export default function BadmintonCourtControl({
         ))}
       </div>
 
-      {/* Primary Score Buttons: Team A (Amber) and Team B (Cyan) (Directly matches screenshot) */}
-      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {/* +1 Team A (Solid Warm Amber) */}
-        <button
-          type="button"
-          disabled={isPending || match.status === "COMPLETED"}
-          onClick={() => handlePoint("A")}
-          className="w-full bg-[#FFAE00] hover:bg-[#FFAE00]/90 active:scale-[0.98] text-[#080D18] py-4 sm:py-5 px-4 rounded font-black text-sm sm:text-base tracking-wider uppercase transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="text-xl">+1</span>
-          <span className="truncate">{match.teamA.name}</span>
-        </button>
+      {/* Primary Score Buttons or Game Over Banner */}
+      {match.status === "COMPLETED" ? (
+        <div className="mt-4 p-5 rounded-lg border-2 border-emerald-500/50 bg-emerald-950/30 text-center shadow-xl">
+          <div className="text-2xl mb-1">🏆</div>
+          <h3 className="text-base sm:text-lg font-black text-white uppercase tracking-wider">
+            MATCH COMPLETED · BWF OFFICIAL RESULT
+          </h3>
+          <p className="text-base text-emerald-400 font-bold mt-1">
+            WINNER: {match.winner || (match.teamA.setsWon > match.teamB.setsWon ? match.teamA.name : match.teamB.name)}
+          </p>
+          <p className="text-xs text-gray-300 font-mono mt-2">
+            Sets Won: {match.teamA.name} ({match.teamA.setsWon}) — {match.teamB.name} ({match.teamB.setsWon})
+          </p>
+          {Array.isArray(match.setHistory) && match.setHistory.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+              {match.setHistory.map((s) => (
+                <span
+                  key={s.set}
+                  className="border border-white/20 bg-white/10 px-3 py-1 rounded text-xs font-mono text-white font-bold"
+                >
+                  Set {s.set}: {s.scoreA}–{s.scoreB}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {/* +1 Team A (Solid Warm Amber) */}
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => handlePoint("A")}
+            className="w-full bg-[#FFAE00] hover:bg-[#FFAE00]/90 active:scale-[0.98] text-[#080D18] py-4 sm:py-5 px-4 rounded font-black text-sm sm:text-base tracking-wider uppercase transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="text-xl">+1</span>
+            <span className="truncate">{match.teamA.name}</span>
+          </button>
 
-        {/* +1 Team B (Solid Bright Cyan) */}
-        <button
-          type="button"
-          disabled={isPending || match.status === "COMPLETED"}
-          onClick={() => handlePoint("B")}
-          className="w-full bg-[#35C5F4] hover:bg-[#35C5F4]/90 active:scale-[0.98] text-[#080D18] py-4 sm:py-5 px-4 rounded font-black text-sm sm:text-base tracking-wider uppercase transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="text-xl">+1</span>
-          <span className="truncate">{match.teamB.name}</span>
-        </button>
-      </div>
+          {/* +1 Team B (Solid Bright Cyan) */}
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={() => handlePoint("B")}
+            className="w-full bg-[#35C5F4] hover:bg-[#35C5F4]/90 active:scale-[0.98] text-[#080D18] py-4 sm:py-5 px-4 rounded font-black text-sm sm:text-base tracking-wider uppercase transition shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="text-xl">+1</span>
+            <span className="truncate">{match.teamB.name}</span>
+          </button>
+        </div>
+      )}
 
       {/* Bottom Sub-bar: Undo and Court Controls */}
       <div className="mt-4 grid grid-cols-3 gap-3">
         <button
           type="button"
-          disabled={isPending || match.status === "COMPLETED"}
+          disabled={isPending}
           onClick={onUndo}
           className="border border-[#25334B] bg-[#0F1A2D] hover:bg-rose-950/40 hover:border-rose-500/50 hover:text-rose-300 text-[#8491A7] py-2.5 px-3 rounded text-xs font-mono font-bold flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-40"
           title="Revert the most recent scoring action"
@@ -149,19 +129,20 @@ export default function BadmintonCourtControl({
 
         <button
           type="button"
-          onClick={() =>
-            setServerSide((current) => (current === "A" ? "B" : "A"))
-          }
+          onClick={() => {
+            if (typeof onSwitchServer === "function") {
+              onSwitchServer(match.servingSide === "A" ? "B" : "A")
+            }
+          }}
           disabled={isPending || match.status === "COMPLETED"}
           className="border border-[#25334B] bg-[#0F1A2D] hover:border-[#8491A7] text-[#8491A7] hover:text-white py-2.5 px-3 rounded text-xs font-mono font-bold flex items-center justify-center gap-2 transition cursor-pointer"
         >
           <RotateCw size={14} />
           <span>Switch Server</span>
-          
         </button>
 
         <div className="border border-[#25334B] bg-[#0F1A2D] py-2.5 px-3 rounded text-xs font-mono text-center flex items-center justify-center text-[#FFAE00]">
-  {`SET ${match.currentSet || 1} · ${match.teamA.score}–${match.teamB.score}`}
+  {match.status === "COMPLETED" ? "FINAL" : `SET ${match.currentSet || 1} · ${match.teamA.score}–${match.teamB.score}`}
 </div>
       </div>
     </div>

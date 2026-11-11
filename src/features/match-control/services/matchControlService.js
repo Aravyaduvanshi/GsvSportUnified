@@ -6,9 +6,17 @@
 
 
 import { canAdminAccessMatch } from "./adminAuthService"
+import {
+  scorePointOnBackend,
+  undoPointOnBackend,
+  recordFaultOnBackend,
+  updateMatchStatusOnBackend,
+  resetMatchOnBackend,
+  switchServerOnBackend,
+} from "../../badminton/services/badmintonApiService"
 
-const MATCHES_STORAGE_KEY = "gsv_admin_matches_store"
-const EVENTS_STORAGE_KEY = "gsv_match_events_store"
+const MATCHES_STORAGE_KEY = "gsv_admin_matches_store_v4"
+const EVENTS_STORAGE_KEY = "gsv_match_events_store_v4"
 
 // Default initial matches seed
 
@@ -73,6 +81,8 @@ const INITIAL_MATCHES_SEED = [
     stage: "Men's Singles · Semifinals",
     court: "Badminton Court 01",
     status: "LIVE",
+    servingSide: "A",
+    servingCourt: "RIGHT",
     assignedAdminId: "admin-arav",
     assignedAdminName: "Arav Kumar",
     version: 1,
@@ -102,8 +112,92 @@ const INITIAL_MATCHES_SEED = [
       teamB: { kills: 0, aces: 0, blocks: 0, errors: 0 },
     },
     faults: [],
-    scheduledTime: "10:00 AM Today",
+    scheduledTime: "09:00 AM Today",
     venue: "Indoor Sports Complex · Court 1",
+  },
+  {
+    id: "badminton-2",
+    sport: "badminton",
+    sportLabel: "Badminton",
+    tournament: "GSV Open Badminton Championship 2026",
+    stage: "Women's Singles · Semifinals",
+    court: "Badminton Court 02",
+    status: "LIVE",
+    servingSide: "A",
+    servingCourt: "RIGHT",
+    assignedAdminId: "admin-arav",
+    assignedAdminName: "Arav Kumar",
+    version: 1,
+    teamA: {
+      id: "player-isha",
+      name: "Isha Mehta",
+      shortName: "ISHA",
+      color: "#FFAE00",
+      score: 0,
+      setsWon: 0,
+      players: ["Isha Mehta"],
+    },
+    teamB: {
+      id: "player-naina",
+      name: "Naina Rao",
+      shortName: "NAINA",
+      color: "#35C5F4",
+      score: 0,
+      setsWon: 0,
+      players: ["Naina Rao"],
+    },
+    periodLabel: "SET 1",
+    currentSet: 1,
+    setHistory: [],
+    stats: {
+      teamA: { kills: 0, aces: 0, blocks: 0, errors: 0 },
+      teamB: { kills: 0, aces: 0, blocks: 0, errors: 0 },
+    },
+    faults: [],
+    scheduledTime: "09:30 AM Today",
+    venue: "Indoor Sports Complex · Court 2",
+  },
+  {
+    id: "badminton-3",
+    sport: "badminton",
+    sportLabel: "Badminton",
+    tournament: "GSV Open Badminton Championship 2026",
+    stage: "Men's Doubles · Semifinals",
+    court: "Badminton Court 03",
+    status: "LIVE",
+    servingSide: "A",
+    servingCourt: "RIGHT",
+    assignedAdminId: "admin-arav",
+    assignedAdminName: "Arav Kumar",
+    version: 1,
+    teamA: {
+      id: "team-rohan-dev",
+      name: "Rohan / Dev",
+      shortName: "ROH/DEV",
+      color: "#FFAE00",
+      score: 0,
+      setsWon: 0,
+      players: ["Rohan Gupta", "Dev Malhotra"],
+    },
+    teamB: {
+      id: "team-karan-vihaan",
+      name: "Karan / Vihaan",
+      shortName: "KAR/VIH",
+      color: "#35C5F4",
+      score: 0,
+      setsWon: 0,
+      players: ["Karan Patel", "Vihaan Joshi"],
+    },
+    periodLabel: "SET 1",
+    currentSet: 1,
+    setHistory: [],
+    stats: {
+      teamA: { kills: 0, aces: 0, blocks: 0, errors: 0 },
+      teamB: { kills: 0, aces: 0, blocks: 0, errors: 0 },
+    },
+    faults: [],
+    scheduledTime: "10:00 AM Today",
+    venue: "Indoor Sports Complex · Court 3",
   },
   {
     id: "cricket-m1",
@@ -301,6 +395,15 @@ export function getAssignedMatches(user, filters = {}) {
   })
 }
 
+function findMatchIndex(matches, matchId) {
+  return matches.findIndex(
+    (m) =>
+      m.id === matchId ||
+      m.id === `badminton-${matchId}` ||
+      (m.id.startsWith("badminton-") && m.id.replace("badminton-", "") === matchId)
+  )
+}
+
 /**
  * Retrieve a single match with strict server-side authorization check.
  */
@@ -314,7 +417,12 @@ export function getAuthorizedMatch(user, matchId) {
   }
 
   const matches = loadStoredMatches()
-  const found = matches.find((m) => m.id === matchId)
+  const found = matches.find(
+    (m) =>
+      m.id === matchId ||
+      m.id === `badminton-${matchId}` ||
+      (m.id.startsWith("badminton-") && m.id.replace("badminton-", "") === matchId)
+  )
 
   if (!found) {
     throw new Error("NOT_FOUND: The requested match does not exist.")
@@ -410,7 +518,7 @@ export function recordMatchFault(user, matchId, faultData) {
   }
 
   const matches = loadStoredMatches()
-  const matchIndex = matches.findIndex((item) => item.id === matchId)
+  const matchIndex = findMatchIndex(matches, matchId)
 
   if (matchIndex === -1) {
     throw new Error("NOT_FOUND: Match not found.")
@@ -481,9 +589,14 @@ export function recordMatchFault(user, matchId, faultData) {
 
   saveStoredEvents(matchId, events)
 
+  if (match.sport === "badminton") {
+    recordFaultOnBackend(matchId, faultData).catch((err) => {
+      console.warn("Backend sync notice (recordFault):", err.message)
+    })
+  }
+
   return { match, events }
 }
-
 
 export function applyScoringEvent(user, matchId, actionData) {
   if (!user || !canAdminAccessMatch(user, matchId)) {
@@ -491,7 +604,7 @@ export function applyScoringEvent(user, matchId, actionData) {
   }
 
   const matches = loadStoredMatches()
-  const matchIndex = matches.findIndex((m) => m.id === matchId)
+  const matchIndex = findMatchIndex(matches, matchId)
   if (matchIndex === -1) {
     throw new Error("NOT_FOUND: Match not found.")
   }
@@ -549,6 +662,11 @@ export function applyScoringEvent(user, matchId, actionData) {
       throw new Error("INVALID_SIDE: Select Team A or Team B.")
     }
 
+    // Update serving side and service court (Even score: Right Box, Odd score: Left Box)
+    match.servingSide = actionData.side
+    const serverScore = actionData.side === "A" ? match.teamA.score : match.teamB.score
+    match.servingCourt = serverScore % 2 === 0 ? "RIGHT" : "LEFT"
+
     const sA = match.teamA.score
     const sB = match.teamB.score
 
@@ -590,6 +708,8 @@ export function applyScoringEvent(user, matchId, actionData) {
         match.periodLabel = `SET ${match.currentSet}`
         match.teamA.score = 0
         match.teamB.score = 0
+        match.servingSide = setWinner
+        match.servingCourt = "RIGHT"
       }
     }
   }
@@ -733,6 +853,12 @@ if (match.sport === "throwball") {
   events.unshift(newEvent)
   saveStoredEvents(matchId, events)
 
+  if (match.sport === "badminton") {
+    scorePointOnBackend(matchId, actionData).catch((err) => {
+      console.warn("Backend sync notice (scorePoint):", err.message)
+    })
+  }
+
   return { match, events }
 }
 
@@ -746,15 +872,12 @@ export function undoLastScoringEvent(user, matchId) {
   }
 
   const matches = loadStoredMatches()
-  const matchIndex = matches.findIndex((m) => m.id === matchId)
+  const matchIndex = findMatchIndex(matches, matchId)
   if (matchIndex === -1) {
     throw new Error("NOT_FOUND: Match not found.")
   }
 
   let match = { ...matches[matchIndex] }
-  if (match.status === "COMPLETED") {
-    throw new Error("MATCH_COMPLETED: Cannot undo actions on a completed match.")
-  }
 
   const events = loadStoredEvents(matchId)
   const targetEvent = events.find((e) => !e.isReversed && e.actionType !== "MATCH_INIT" && e.actionType !== "UNDO")
@@ -837,6 +960,12 @@ if (targetEvent.prevState) {
   events.unshift(undoEvent)
   saveStoredEvents(matchId, events)
 
+  if (match.sport === "badminton") {
+    undoPointOnBackend(matchId).catch((err) => {
+      console.warn("Backend sync notice (undo):", err.message)
+    })
+  }
+
   return { match, events }
 }
 
@@ -849,7 +978,7 @@ export function updateMatchStatus(user, matchId, newStatus) {
   }
 
   const matches = loadStoredMatches()
-  const matchIndex = matches.findIndex((m) => m.id === matchId)
+  const matchIndex = findMatchIndex(matches, matchId)
   if (matchIndex === -1) {
     throw new Error("NOT_FOUND: Match not found.")
   }
@@ -876,6 +1005,128 @@ export function updateMatchStatus(user, matchId, newStatus) {
     isReversed: false,
   })
   saveStoredEvents(matchId, events)
+
+  return { match, events }
+}
+
+/**
+ * Reset match scores to 0-0 (for restarts / fresh match officiation).
+ */
+export function resetMatchToZero(user, matchId) {
+  if (!user || !canAdminAccessMatch(user, matchId)) {
+    throw new Error("FORBIDDEN: You are not authorized to reset this match.")
+  }
+
+  const matches = loadStoredMatches()
+  const matchIndex = findMatchIndex(matches, matchId)
+  if (matchIndex === -1) {
+    throw new Error("NOT_FOUND: Match not found.")
+  }
+
+  const match = { ...matches[matchIndex] }
+  match.status = "LIVE"
+  match.currentSet = 1
+  match.periodLabel = "SET 1"
+  match.winner = null
+  match.servingSide = "A"
+  match.servingCourt = "RIGHT"
+  match.teamA = {
+    ...match.teamA,
+    score: 0,
+    setsWon: 0,
+  }
+  match.teamB = {
+    ...match.teamB,
+    score: 0,
+    setsWon: 0,
+  }
+  match.setHistory = []
+  if (match.stats?.teamA) {
+    match.stats.teamA = { kills: 0, aces: 0, blocks: 0, errors: 0 }
+  }
+  if (match.stats?.teamB) {
+    match.stats.teamB = { kills: 0, aces: 0, blocks: 0, errors: 0 }
+  }
+  match.version = (match.version || 1) + 1
+
+  matches[matchIndex] = match
+  saveStoredMatches(matches)
+
+  const resetEvent = {
+    id: `evt-${Date.now()}-reset`,
+    matchId,
+    timestamp: new Date().toISOString(),
+    formattedTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    adminId: user.id,
+    adminName: user.name,
+    actionType: "RESET",
+    description: `Match reset to 0-0 by ${user.name}`,
+    prevScore: { teamA: 0, teamB: 0 },
+    newScore: { teamA: 0, teamB: 0 },
+    payload: {},
+    isReversed: false,
+  }
+
+  const events = [resetEvent]
+  saveStoredEvents(matchId, events)
+
+  if (match.sport === "badminton") {
+    resetMatchOnBackend(matchId).catch((err) => {
+      console.warn("Backend sync notice (resetMatch):", err.message)
+    })
+  }
+
+  return { match, events }
+}
+
+/**
+ * Switch server and serving service box (Even score: Right Box, Odd score: Left Box).
+ */
+export function switchServerInMatch(user, matchId, { side, court } = {}) {
+  if (!user || !canAdminAccessMatch(user, matchId)) {
+    throw new Error("FORBIDDEN: You are not authorized to switch server.")
+  }
+
+  const matches = loadStoredMatches()
+  const matchIndex = findMatchIndex(matches, matchId)
+  if (matchIndex === -1) {
+    throw new Error("NOT_FOUND: Match not found.")
+  }
+
+  const match = { ...matches[matchIndex] }
+  const newSide = side || (match.servingSide === "A" ? "B" : "A")
+  match.servingSide = newSide
+  const serverScore = newSide === "A" ? match.teamA.score : match.teamB.score
+  match.servingCourt = court || (serverScore % 2 === 0 ? "RIGHT" : "LEFT")
+  match.version = (match.version || 1) + 1
+
+  matches[matchIndex] = match
+  saveStoredMatches(matches)
+
+  const serverTeam = newSide === "A" ? match.teamA : match.teamB
+  const srvEvent = {
+    id: `evt-${Date.now()}-srv`,
+    matchId,
+    timestamp: new Date().toISOString(),
+    formattedTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    adminId: user.id,
+    adminName: user.name,
+    actionType: "SERVER_CHANGE",
+    description: `Service switched to ${serverTeam.name} (${match.servingCourt} Service Box)`,
+    prevScore: null,
+    newScore: match.servingCourt,
+    isReversed: false,
+  }
+
+  const events = loadStoredEvents(matchId)
+  events.unshift(srvEvent)
+  saveStoredEvents(matchId, events)
+
+  if (match.sport === "badminton") {
+    switchServerOnBackend(matchId, { side: newSide, court: match.servingCourt }).catch((err) => {
+      console.warn("Backend sync notice (switchServer):", err.message)
+    })
+  }
 
   return { match, events }
 }

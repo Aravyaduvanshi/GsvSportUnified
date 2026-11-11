@@ -6,26 +6,43 @@
 const AUTH_USER_STORAGE_KEY = "gsv_current_admin_user"
 
 export const MOCK_ADMIN_ACCOUNTS = [
-
-
-{
-  id: "admin-throwball",
-  name: "SANJU",
-  email: "sanju.admin@gsv.ac.in",
-  role: "assigned_admin",
-  primarySport: "Throwball",
-  assignedMatchIds: ["throwball-m1"],
-  avatar: "SJ",
-},
-
   {
     id: "admin-arav",
     name: "Arav Kumar",
     email: "arav.badminton@gsv.ac.in",
     role: "assigned_admin",
     primarySport: "Badminton",
-    assignedMatchIds: ["badminton-1"],
+    assignedMatchIds: [
+      "badminton-1",
+      "badminton-2",
+      "badminton-3",
+      "badminton-4",
+      "badminton-5",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+    ],
     avatar: "AK",
+  },
+  {
+    id: "admin-super",
+    name: "Prof. S. K. Raman",
+    email: "athletics.dean@gsv.ac.in",
+    role: "super_admin",
+    primarySport: "All Sports",
+    assignedMatchIds: ["*"], // Wildcard: Super admin can access and manage all matches
+    avatar: "SR",
+  },
+  {
+    id: "admin-throwball",
+    name: "SANJU",
+    email: "sanju.admin@gsv.ac.in",
+    role: "assigned_admin",
+    primarySport: "Throwball",
+    assignedMatchIds: ["throwball-m1"],
+    avatar: "SJ",
   },
   {
     id: "admin-vikram",
@@ -44,15 +61,6 @@ export const MOCK_ADMIN_ACCOUNTS = [
     primarySport: "Basketball",
     assignedMatchIds: ["bb-game-1"],
     avatar: "TM",
-  },
-  {
-    id: "admin-super",
-    name: "Prof. S. K. Raman",
-    email: "athletics.dean@gsv.ac.in",
-    role: "super_admin",
-    primarySport: "All Sports",
-    assignedMatchIds: ["*"], // Wildcard: Super admin can access and manage all matches
-    avatar: "SR",
   },
   {
     id: "admin-unassigned",
@@ -108,7 +116,13 @@ export function canAdminAccessMatch(user, matchId) {
   if (!user || !matchId) return false
   if (user.role === "super_admin") return true
   if (Array.isArray(user.assignedMatchIds)) {
-    return user.assignedMatchIds.includes(matchId) || user.assignedMatchIds.includes("*")
+    if (user.assignedMatchIds.includes("*")) return true
+    const rawId = String(matchId).replace(/^badminton-/, "")
+    return (
+      user.assignedMatchIds.includes(matchId) ||
+      user.assignedMatchIds.includes(rawId) ||
+      user.assignedMatchIds.includes(`badminton-${rawId}`)
+    )
   }
   return false
 }
