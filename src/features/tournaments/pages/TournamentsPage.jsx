@@ -2,14 +2,83 @@
  * TournamentsPage
  * Route: /tournaments
  * Lists tournament brackets across sports.
+ * Authoritative backend dynamic bracket synchronized across multiple browsers.
  */
+import { useState, useEffect, useCallback } from "react"
 import { Trophy } from "lucide-react"
 import BadmintonBracketColumn from "../../badminton/components/BadmintonBracketColumn"
-import badmintonBracket from "../../badminton/data/bracket"
+import { buildBracketFromMatches } from "../../badminton/services/tournamentService"
+import {
+  fetchTournaments,
+  fetchBadmintonSchedule,
+  subscribeToTournaments,
+  subscribeToBadmintonLiveScores,
+  subscribeToMatchDeletion,
+  subscribeToMatchUpdates,
+  subscribeToScheduleUpdates,
+  subscribeToStompTopic,
+} from "../../badminton/services/badmintonApiService"
 import Button from "../../../components/atoms/Button"
 import Badge from "../../../components/atoms/Badge"
 
 export default function TournamentsPage() {
+  const [tournaments, setTournaments] = useState([])
+  const [bracket, setBracket] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const loadData = useCallback(async () => {
+    try {
+      const [tList, mList] = await Promise.all([
+        fetchTournaments(),
+        fetchBadmintonSchedule("ALL"),
+      ])
+
+      const validTournaments = Array.isArray(tList) ? tList : []
+      const validMatches = Array.isArray(mList) ? mList : []
+
+      setTournaments(validTournaments)
+
+      if (validTournaments.length > 0) {
+        const built = buildBracketFromMatches(validTournaments[0], validMatches)
+        setBracket(built)
+      } else {
+        setBracket([])
+      }
+    } catch (e) {
+      console.warn("Failed to load tournaments on TournamentsPage:", e)
+      setBracket([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadData()
+
+    const unsubTourn = subscribeToTournaments(() => loadData())
+    const unsubTournDel = subscribeToStompTopic("/topic/tournaments/deleted", () => loadData())
+    const unsubLive = subscribeToBadmintonLiveScores(() => loadData())
+    const unsubDel = subscribeToMatchDeletion(() => loadData())
+    const unsubMatches = subscribeToMatchUpdates(() => loadData())
+    const unsubSched = subscribeToScheduleUpdates(() => loadData())
+
+    const interval = setInterval(loadData, 4000)
+
+    return () => {
+      unsubTourn()
+      unsubTournDel()
+      unsubLive()
+      unsubDel()
+      unsubMatches()
+      unsubSched()
+      clearInterval(interval)
+    }
+  }, [loadData])
+
+  const activeTournament = tournaments[0] || null
+  const tournamentTitle = activeTournament?.tournamentName || "GSV BADMINTON CHAMPIONSHIP 2026"
+  const categoryLabel = (activeTournament?.category?.name || activeTournament?.category || "Men's Singles").toString().replace(/_/g, " ")
+
   return (
     <div className="mx-auto max-w-7xl px-5 py-16 md:px-10 lg:px-16">
       {/* Header */}
@@ -21,7 +90,7 @@ export default function TournamentsPage() {
           CAMPUS <span className="text-[#DFFF00]">TOURNAMENTS</span>
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-400">
-          Championship brackets, elimination ladders, and stage progression. Currently featuring the GSV Badminton Championship tournament bracket.
+          Championship brackets, elimination ladders, and stage progression. Currently featuring the official badminton championship tournament bracket.
         </p>
       </div>
 
@@ -32,34 +101,50 @@ export default function TournamentsPage() {
             <Trophy size={20} className="text-[#DFFF00]" />
             <div>
               <h2 className="text-xl font-black uppercase text-white">
-                GSV BADMINTON CHAMPIONSHIP 2026
+                {tournamentTitle}
               </h2>
-              <p className="text-[10px] tracking-widest text-gray-400">
-                MEN'S SINGLES · KNOCKOUT STAGE
+              <p className="text-[10px] tracking-widest text-gray-400 uppercase">
+                {categoryLabel} · KNOCKOUT STAGE
               </p>
             </div>
           </div>
 
-          <Badge variant="live">LIVE ROUND: SEMIFINALS</Badge>
+          <Badge variant={activeTournament ? "live" : "default"}>
+            {activeTournament ? `CURRENT: ${activeTournament.currentRoundName || "IN PROGRESS"}` : "NO ACTIVE TOURNAMENT"}
+          </Badge>
         </div>
 
         {/* Bracket Viewer */}
-        <div className="overflow-x-auto pb-6">
-          <div className="flex min-w-[760px] gap-6">
-            {badmintonBracket.map((round) => (
-              <BadmintonBracketColumn key={round.title} round={round} />
-            ))}
-          </div>
-        </div>
+        {bracket.length > 0 ? (
+          <>
+            <div className="overflow-x-auto pb-6">
+              <div className="flex min-w-[760px] gap-6">
+                {bracket.map((round) => (
+                  <BadmintonBracketColumn key={round.title} round={round} />
+                ))}
+              </div>
+            </div>
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6">
-          <span className="text-[10px] tracking-widest text-gray-500">
-            SCROLL HORIZONTALLY TO VIEW ALL BRACKET ROUNDS →
-          </span>
-          <Button to="/sports/badminton#brackets" variant="primary" size="sm">
-            Open in Badminton Arena →
-          </Button>
-        </div>
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-white/10 pt-6">
+              <span className="text-[10px] tracking-widest text-gray-500">
+                SCROLL HORIZONTALLY TO VIEW ALL BRACKET ROUNDS →
+              </span>
+              <Button to="/sports/badminton#brackets" variant="primary" size="sm">
+                Open in Badminton Arena →
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="border border-dashed border-white/10 bg-[#0C0E0D] px-6 py-16 text-center rounded-xl">
+            <Trophy size={36} className="mx-auto text-gray-600 mb-3" />
+            <h3 className="text-sm font-black text-white uppercase tracking-widest">
+              No Tournaments Available Yet
+            </h3>
+            <p className="mt-2 text-xs text-gray-400 max-w-md mx-auto leading-5 font-mono">
+              The tournament bracket will appear here once officially launched by administrators.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Other Upcoming Tournaments */}

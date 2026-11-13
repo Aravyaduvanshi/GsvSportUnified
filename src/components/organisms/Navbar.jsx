@@ -88,7 +88,7 @@ export default function Navbar() {
               <span className="grid h-5 w-5 place-items-center border border-current text-[10px]">
                 ↗
               </span>
-              ADMIN ACCESS
+              ADMIN LOGIN
             </Link>
           </div>
         {/* Mobile menu trigger */}
@@ -132,7 +132,7 @@ export default function Navbar() {
              onClick={() => setMenuOpen(false)}
              className="flex w-fit items-center gap-2 border border-[#07F080]/40 bg-[#07F080]/10 px-4 py-3 text-[10px] font-bold tracking-widest text-[#07F080] transition hover:bg-[#07F080] hover:text-black">
              <span>↗</span>
-             ADMIN ACCESS
+             ADMIN LOGIN
             </Link>
           </div>
         </div>

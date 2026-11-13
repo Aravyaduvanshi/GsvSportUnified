@@ -13,326 +13,60 @@ import {
   updateMatchStatusOnBackend,
   resetMatchOnBackend,
   switchServerOnBackend,
+  createMatchOnBackend,
+  deleteMatchOnBackend,
+  correctScoreOnBackend,
 } from "../../badminton/services/badmintonApiService"
 
-const MATCHES_STORAGE_KEY = "gsv_admin_matches_store_v4"
-const EVENTS_STORAGE_KEY = "gsv_match_events_store_v4"
-
-// Default initial matches seed
-
-const INITIAL_MATCHES_SEED = [
-
-
-  {
-    id: "throwball-m1",
-    sport: "throwball",
-    sportLabel: "Throwball",
-    tournament: "GSV Inter-Department Throwball Cup 2026",
-    stage: "Women's / Open · Match 01",
-    court: "Throwball Court 01",
-    status: "LIVE",
-    assignedAdminId: "admin-throwball",
-    assignedAdminName: "Throwball Admin",
-    version: 1,
-
-    teamA: {
-      id: "throwball-team-a",
-      name: "Rajdhani Eagles",
-      shortName: "EAGLES",
-      color: "#FFAE00",
-      score: 0,
-      setsWon: 0,
-      players: [],
-    },
-
-    teamB: {
-      id: "throwball-team-b",
-      name: "Duronto Bulls",
-      shortName: "BULLS",
-      color: "#35C5F4",
-      score: 0,
-      setsWon: 0,
-      players: [],
-    },
-
-    periodLabel: "SET 1",
-    currentSet: 1,
-    setHistory: [],
-    pointsTarget: 25,
-    winningMargin: 2,
-    bestOfSets: 3,
-
-    stats: {
-      teamA: { serviceErrors: 0, faults: 0 },
-      teamB: { serviceErrors: 0, faults: 0 },
-    },
-
-    faults: [],
-    scheduledTime: "11:00 AM Today",
-    venue: "Throwball Court 01",
-  },
-
-
-  {
-    id: "badminton-1",
-    sport: "badminton",
-    sportLabel: "Badminton",
-    tournament: "GSV Open Badminton Championship 2026",
-    stage: "Men's Singles · Semifinals",
-    court: "Badminton Court 01",
-    status: "LIVE",
-    servingSide: "A",
-    servingCourt: "RIGHT",
-    assignedAdminId: "admin-arav",
-    assignedAdminName: "Arav Kumar",
-    version: 1,
-    teamA: {
-      id: "player-arav",
-      name: "Arav Kumar",
-      shortName: "ARAV",
-      color: "#FFAE00",
-      score: 0,
-      setsWon: 0,
-      players: ["Arav Kumar"],
-    },
-    teamB: {
-      id: "player-rahul",
-      name: "Rahul Sharma",
-      shortName: "RAHUL",
-      color: "#35C5F4",
-      score: 0,
-      setsWon: 0,
-      players: ["Rahul Sharma"],
-    },
-    periodLabel: "SET 1",
-    currentSet: 1,
-    setHistory: [],
-    stats: {
-      teamA: { kills: 0, aces: 0, blocks: 0, errors: 0 },
-      teamB: { kills: 0, aces: 0, blocks: 0, errors: 0 },
-    },
-    faults: [],
-    scheduledTime: "09:00 AM Today",
-    venue: "Indoor Sports Complex · Court 1",
-  },
-  {
-    id: "badminton-2",
-    sport: "badminton",
-    sportLabel: "Badminton",
-    tournament: "GSV Open Badminton Championship 2026",
-    stage: "Women's Singles · Semifinals",
-    court: "Badminton Court 02",
-    status: "LIVE",
-    servingSide: "A",
-    servingCourt: "RIGHT",
-    assignedAdminId: "admin-arav",
-    assignedAdminName: "Arav Kumar",
-    version: 1,
-    teamA: {
-      id: "player-isha",
-      name: "Isha Mehta",
-      shortName: "ISHA",
-      color: "#FFAE00",
-      score: 0,
-      setsWon: 0,
-      players: ["Isha Mehta"],
-    },
-    teamB: {
-      id: "player-naina",
-      name: "Naina Rao",
-      shortName: "NAINA",
-      color: "#35C5F4",
-      score: 0,
-      setsWon: 0,
-      players: ["Naina Rao"],
-    },
-    periodLabel: "SET 1",
-    currentSet: 1,
-    setHistory: [],
-    stats: {
-      teamA: { kills: 0, aces: 0, blocks: 0, errors: 0 },
-      teamB: { kills: 0, aces: 0, blocks: 0, errors: 0 },
-    },
-    faults: [],
-    scheduledTime: "09:30 AM Today",
-    venue: "Indoor Sports Complex · Court 2",
-  },
-  {
-    id: "badminton-3",
-    sport: "badminton",
-    sportLabel: "Badminton",
-    tournament: "GSV Open Badminton Championship 2026",
-    stage: "Men's Doubles · Semifinals",
-    court: "Badminton Court 03",
-    status: "LIVE",
-    servingSide: "A",
-    servingCourt: "RIGHT",
-    assignedAdminId: "admin-arav",
-    assignedAdminName: "Arav Kumar",
-    version: 1,
-    teamA: {
-      id: "team-rohan-dev",
-      name: "Rohan / Dev",
-      shortName: "ROH/DEV",
-      color: "#FFAE00",
-      score: 0,
-      setsWon: 0,
-      players: ["Rohan Gupta", "Dev Malhotra"],
-    },
-    teamB: {
-      id: "team-karan-vihaan",
-      name: "Karan / Vihaan",
-      shortName: "KAR/VIH",
-      color: "#35C5F4",
-      score: 0,
-      setsWon: 0,
-      players: ["Karan Patel", "Vihaan Joshi"],
-    },
-    periodLabel: "SET 1",
-    currentSet: 1,
-    setHistory: [],
-    stats: {
-      teamA: { kills: 0, aces: 0, blocks: 0, errors: 0 },
-      teamB: { kills: 0, aces: 0, blocks: 0, errors: 0 },
-    },
-    faults: [],
-    scheduledTime: "10:00 AM Today",
-    venue: "Indoor Sports Complex · Court 3",
-  },
-  {
-    id: "cricket-m1",
-    sport: "cricket",
-    sportLabel: "Cricket",
-    tournament: "GSV Inter-Department T20 Trophy",
-    stage: "Super 4 · Match 01",
-    court: "Main Oval Ground, Pitch 1",
-    status: "LIVE",
-    assignedAdminId: "admin-vikram",
-    assignedAdminName: "Vikram Sengupta",
-    version: 1,
-    teamA: {
-      id: "csw",
-      name: "Computer Science Warriors",
-      shortName: "CSW",
-      color: "#FFAE00",
-      runs: 0,
-      wickets: 0,
-      overs: "0.0",
-      isBatting: true,
-    },
-    teamB: {
-      id: "mec",
-      name: "Mechanical Titans",
-      shortName: "MEC",
-      color: "#35C5F4",
-      runs: 0,
-      wickets: 0,
-      overs: "0.0",
-      isBatting: false,
-    },
-    periodLabel: "INNINGS 1",
-    target: null,
-    runsNeeded: null,
-    ballsRemaining: 120,
-    currentOverBalls: [],
-    striker: "",
-    nonStriker: "",
-    bowler: "",
-    stats: {
-      teamA: { extras: 0, boundaries: 0, runRate: "0.00" },
-      teamB: { extras: 0, boundaries: 0, runRate: "0.00" },
-    },
-    faults: [],
-    scheduledTime: "02:30 PM Today",
-    venue: "Main Oval Ground, Pitch 1",
-  },
-  {
-    id: "bb-game-1",
-    sport: "basketball",
-    sportLabel: "Basketball",
-    tournament: "GSV Hoops Classic 2026-27",
-    stage: "Championship Semifinal A",
-    court: "North Hardcourt Complex · Court 1",
-    status: "LIVE",
-    assignedAdminId: "admin-tariq",
-    assignedAdminName: "Tariq Al-Mansoor",
-    version: 1,
-    teamA: {
-      id: "h3-ballers",
-      name: "Hostel 3 Ballers",
-      shortName: "H3B",
-      color: "#FFAE00",
-      score: 0,
-      fouls: 0,
-      timeouts: 0,
-      quarters: [0, 0, 0, 0],
-    },
-    teamB: {
-      id: "civ-dunkers",
-      name: "Civil Slammers",
-      shortName: "CSL",
-      color: "#35C5F4",
-      score: 0,
-      fouls: 0,
-      timeouts: 0,
-      quarters: [0, 0, 0, 0],
-    },
-    periodLabel: "Q1",
-    clock: "10:00",
-    stats: {
-      teamA: { threePointers: 0, fieldGoals: 0, freeThrows: 0 },
-      teamB: { threePointers: 0, fieldGoals: 0, freeThrows: 0 },
-    },
-    faults: [],
-    scheduledTime: "06:30 PM Today",
-    venue: "North Hardcourt Complex · Court 1",
-  },
-]
+// Local cache storage keys for instant responsiveness and resilience
+const MATCHES_STORAGE_KEY = "gsv_admin_matches_store_v6"
+const EVENTS_STORAGE_KEY = "gsv_match_events_store_v6"
 
 /**
- * Initialize / Read persistent matches
+ * Initialize / Read cached matches
  */
-
-function loadStoredMatches() {
+export function loadStoredMatches() {
   try {
     const raw = localStorage.getItem(MATCHES_STORAGE_KEY)
-
     if (raw) {
-      const storedMatches = JSON.parse(raw)
-
-      if (!Array.isArray(storedMatches)) {
-        throw new Error("Invalid stored matches format.")
-      }
-
-      // Add newly introduced demo matches without resetting existing scores.
-      const storedIds = new Set(storedMatches.map((match) => match.id))
-      const missingMatches = INITIAL_MATCHES_SEED.filter(
-        (match) => !storedIds.has(match.id)
-      )
-
-      if (missingMatches.length > 0) {
-        const migratedMatches = [...storedMatches, ...missingMatches]
-        saveStoredMatches(migratedMatches)
-        return migratedMatches
-      }
-
-      return storedMatches
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) return parsed
     }
   } catch (err) {
-    console.error("Failed to load matches store:", err)
+    console.error("Failed to load matches from storage:", err)
   }
-
-  saveStoredMatches(INITIAL_MATCHES_SEED)
-  return INITIAL_MATCHES_SEED
+  return []
 }
 
-
-function saveStoredMatches(matches) {
+export function saveStoredMatches(matches) {
   try {
-    localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(matches))
+    if (!Array.isArray(matches)) return
+    const existing = loadStoredMatches()
+    const map = new Map()
+    for (const m of existing) {
+      if (m && m.id) map.set(String(m.id), m)
+    }
+    for (const m of matches) {
+      if (m && m.id) {
+        if (m.status === "DELETED") {
+          map.delete(String(m.id))
+        } else {
+          map.set(String(m.id), m)
+        }
+      }
+    }
+    localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(Array.from(map.values())))
   } catch (err) {
-    console.error("Failed to save matches store:", err)
+    console.error("Failed to save matches to storage:", err)
   }
+}
+
+export function removeStoredMatch(matchId) {
+  try {
+    const existing = loadStoredMatches()
+    const filtered = existing.filter(m => m && String(m.id) !== String(matchId) && String(m.id) !== `badminton-${matchId}`)
+    localStorage.setItem(MATCHES_STORAGE_KEY, JSON.stringify(filtered))
+  } catch (_) {}
 }
 
 /**
@@ -637,13 +371,16 @@ export function applyScoringEvent(user, matchId, actionData) {
       throw new Error("MATCH_COMPLETED: A player has already won the match.")
     }
 
+    const rawDetail = actionData.actionDetail === "Error" ? "Opponent Error" : (actionData.actionDetail || "Rally Point")
+
     // Award one rally point to the selected player.
     if (actionData.side === "A") {
       match.teamA = {
         ...match.teamA,
         score: match.teamA.score + 1,
       }
-      description = `Point to ${match.teamA.name} (${actionData.actionDetail || "Rally Point"})`
+      match.score1 = match.teamA.score
+      description = `Point to ${match.teamA.name} (${rawDetail})`
 
       if (match.stats?.teamA) {
         match.stats.teamA.kills = (match.stats.teamA.kills || 0) + 1
@@ -653,7 +390,8 @@ export function applyScoringEvent(user, matchId, actionData) {
         ...match.teamB,
         score: match.teamB.score + 1,
       }
-      description = `Point to ${match.teamB.name} (${actionData.actionDetail || "Rally Point"})`
+      match.score2 = match.teamB.score
+      description = `Point to ${match.teamB.name} (${rawDetail})`
 
       if (match.stats?.teamB) {
         match.stats.teamB.kills = (match.stats.teamB.kills || 0) + 1
@@ -694,6 +432,8 @@ export function applyScoringEvent(user, matchId, actionData) {
       ]
 
       winner.setsWon += 1
+      match.setsWon1 = match.teamA.setsWon
+      match.setsWon2 = match.teamB.setsWon
       description += ` — Set ${match.currentSet} won by ${winner.name}!`
 
       // Best of 3: first player to win 2 sets wins the match.
@@ -702,12 +442,17 @@ export function applyScoringEvent(user, matchId, actionData) {
         match.winner = winner.name
         match.periodLabel = "MATCH COMPLETED"
         description += ` Match won by ${winner.name}!`
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("gsv_match_completed", { detail: match }))
+        }
       } else {
         // Start the next set only when the match is not over.
         match.currentSet += 1
         match.periodLabel = `SET ${match.currentSet}`
         match.teamA.score = 0
         match.teamB.score = 0
+        match.score1 = 0
+        match.score2 = 0
         match.servingSide = setWinner
         match.servingCourt = "RIGHT"
       }
@@ -985,6 +730,14 @@ export function updateMatchStatus(user, matchId, newStatus) {
 
   const match = { ...matches[matchIndex] }
   match.status = newStatus
+  if (newStatus === "COMPLETED") {
+    if (!match.winner) {
+      match.winner = (match.teamA.score > match.teamB.score ? match.teamA.name : match.teamB.name)
+    }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("gsv_match_completed", { detail: match }))
+    }
+  }
   match.version = (match.version || 1) + 1
 
   matches[matchIndex] = match
@@ -1007,6 +760,107 @@ export function updateMatchStatus(user, matchId, newStatus) {
   saveStoredEvents(matchId, events)
 
   return { match, events }
+}
+
+/**
+ * Assign a court to an upcoming match, set status to LIVE, and prepare it for scoring.
+ * Enforces court collision validation.
+ */
+export function assignCourtAndStartMatch(user, matchId, courtName) {
+  if (!user) throw new Error("UNAUTHENTICATED: Please log in as an administrator.")
+
+  const matches = loadStoredMatches()
+
+  // Validate court occupancy
+  const ongoing = matches.find(
+    (m) =>
+      m.id !== matchId &&
+      m.status === "LIVE" &&
+      m.court &&
+      m.court.trim().toLowerCase() === courtName.trim().toLowerCase()
+  )
+  if (ongoing) {
+    throw new Error(
+      `COURT_BUSY: ${courtName} currently has an ongoing LIVE match (${ongoing.teamA?.name || ongoing.player1} vs ${ongoing.teamB?.name || ongoing.player2}). Please complete it first or choose a free court.`
+    )
+  }
+
+  const matchIndex = findMatchIndex(matches, matchId)
+  let match
+  if (matchIndex === -1) {
+    // If not in matches store yet (e.g. from bracket), create and add it:
+    match = {
+      id: matchId,
+      sport: "badminton",
+      sportLabel: "Badminton",
+      tournament: "GSV Badminton Championship 2026",
+      stage: "Tournament Match",
+      category: "Men's Singles",
+      court: courtName,
+      venue: courtName,
+      status: "LIVE",
+      assignedAdminId: user.id,
+      assignedAdminName: user.name,
+      version: 1,
+      teamA: {
+        id: `${matchId}-team-a`,
+        name: "Player 1",
+        shortName: "P1",
+        color: "#FFAE00",
+        score: 0,
+        setsWon: 0,
+        players: ["Player 1"],
+      },
+      teamB: {
+        id: `${matchId}-team-b`,
+        name: "Player 2",
+        shortName: "P2",
+        color: "#35C5F4",
+        score: 0,
+        setsWon: 0,
+        players: ["Player 2"],
+      },
+      player1: "Player 1",
+      player2: "Player 2",
+      score1: 0,
+      score2: 0,
+      periodLabel: "SET 1",
+      currentSet: 1,
+      setHistory: [],
+      servingSide: "A",
+      servingCourt: "RIGHT",
+      stats: { teamA: { kills: 0 }, teamB: { kills: 0 } },
+      faults: [],
+    }
+    matches.unshift(match)
+  } else {
+    match = { ...matches[matchIndex] }
+    match.court = courtName
+    match.venue = courtName
+    match.status = "LIVE"
+    match.version = (match.version || 1) + 1
+    matches[matchIndex] = match
+  }
+  saveStoredMatches(matches)
+
+  // Append audit event
+  const events = loadStoredEvents(matchId)
+  events.unshift({
+    id: `evt-court-${Date.now()}`,
+    matchId,
+    timestamp: new Date().toISOString(),
+    formattedTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    adminId: user.id,
+    adminName: user.name,
+    actionType: "COURT_ASSIGNED",
+    description: `Assigned to ${courtName} and started LIVE by ${user.name}`,
+    prevScore: null,
+    newScore: "LIVE",
+    isReversed: false,
+  })
+  saveStoredEvents(matchId, events)
+
+  return match
 }
 
 /**
@@ -1040,6 +894,10 @@ export function resetMatchToZero(user, matchId) {
     score: 0,
     setsWon: 0,
   }
+  match.score1 = 0
+  match.score2 = 0
+  match.setsWon1 = 0
+  match.setsWon2 = 0
   match.setHistory = []
   if (match.stats?.teamA) {
     match.stats.teamA = { kills: 0, aces: 0, blocks: 0, errors: 0 }
@@ -1125,6 +983,236 @@ export function switchServerInMatch(user, matchId, { side, court } = {}) {
   if (match.sport === "badminton") {
     switchServerOnBackend(matchId, { side: newSide, court: match.servingCourt }).catch((err) => {
       console.warn("Backend sync notice (switchServer):", err.message)
+    })
+  }
+
+  return { match, events }
+}
+
+/**
+ * Create a new match dynamically (Admin only)
+ */
+export function createMatch(user, matchData) {
+  if (!user || user.role === "user") {
+    throw new Error("FORBIDDEN: Standard users cannot create matches.")
+  }
+
+  const matches = loadStoredMatches()
+  const rawSport = (matchData.sport || "badminton").toLowerCase()
+  const targetCourt = matchData.court || "Badminton Court 01"
+  const targetStatus = matchData.status || "LIVE"
+
+  // Check if court already has an ongoing LIVE match
+  if (targetStatus === "LIVE") {
+    const ongoingOnCourt = matches.find(
+      (m) =>
+        m.status === "LIVE" &&
+        m.court &&
+        m.court.trim().toLowerCase() === targetCourt.trim().toLowerCase()
+    )
+    if (ongoingOnCourt) {
+      throw new Error(
+        `COURT_BUSY: ${targetCourt} currently has an ongoing LIVE match (${ongoingOnCourt.teamA?.name} vs ${ongoingOnCourt.teamB?.name}). Please complete the current match or select another court.`
+      )
+    }
+  }
+
+  const newId = matchData.id || `${rawSport}-${Date.now()}`
+
+  const player1 = matchData.player1 || matchData.teamA?.name || "Player 1"
+  const player2 = matchData.player2 || matchData.teamB?.name || "Player 2"
+  const partner1 = matchData.partner1 || null
+  const partner2 = matchData.partner2 || null
+  const isDoubles = Boolean(partner1 && partner2)
+
+  const teamAName = isDoubles ? `${player1} / ${partner1}` : player1
+  const teamBName = isDoubles ? `${player2} / ${partner2}` : player2
+
+  const newMatch = {
+    id: newId,
+    sport: rawSport,
+    sportLabel: rawSport.charAt(0).toUpperCase() + rawSport.slice(1),
+    tournament: matchData.tournament || "GSV Badminton Championship 2026",
+    stage: matchData.stage || "Quarter Final",
+    category: matchData.category || (isDoubles ? "Men's Doubles" : "Men's Singles"),
+    court: matchData.court || "Badminton Court 01",
+    venue: matchData.venue || matchData.court || "Badminton Court 01",
+    status: matchData.status || "LIVE",
+    assignedAdminId: user.id,
+    assignedAdminName: user.name,
+    version: 1,
+    teamA: {
+      id: `${newId}-team-a`,
+      name: teamAName,
+      shortName: player1.slice(0, 5).toUpperCase(),
+      color: "#FFAE00",
+      score: 0,
+      setsWon: 0,
+      players: isDoubles ? [player1, partner1] : [player1],
+    },
+    teamB: {
+      id: `${newId}-team-b`,
+      name: teamBName,
+      shortName: player2.slice(0, 5).toUpperCase(),
+      color: "#35C5F4",
+      score: 0,
+      setsWon: 0,
+      players: isDoubles ? [player2, partner2] : [player2],
+    },
+    player1,
+    player2,
+    score1: 0,
+    score2: 0,
+    setsWon1: 0,
+    setsWon2: 0,
+    periodLabel: "SET 1",
+    currentSet: 1,
+    setHistory: [],
+    servingSide: "A",
+    servingCourt: "RIGHT",
+    isDoubles,
+    doublesState: isDoubles
+      ? {
+          teamARightPlayer: player1,
+          teamALeftPlayer: partner1,
+          teamBRightPlayer: player2,
+          teamBLeftPlayer: partner2,
+          currentServerPlayer: player1,
+          currentReceiverPlayer: player2,
+        }
+      : null,
+    stats: {
+      teamA: { kills: 0, aces: 0, errors: 0 },
+      teamB: { kills: 0, aces: 0, errors: 0 },
+    },
+    faults: [],
+    scheduledTime: matchData.scheduledTime || "Now · Live Court",
+  }
+
+  const updatedMatches = [newMatch, ...matches]
+  saveStoredMatches(updatedMatches)
+
+  // Initialize event log
+  const initialEvent = [
+    {
+      id: `evt-init-${newId}`,
+      matchId: newId,
+      timestamp: new Date().toISOString(),
+      formattedTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      adminName: user.name,
+      adminId: user.id,
+      actionType: "MATCH_INIT",
+      description: `Match created by ${user.name}: ${teamAName} vs ${teamBName} (${newMatch.category} on ${newMatch.court})`,
+      prevScore: null,
+      newScore: "0 - 0",
+      isReversed: false,
+    },
+  ]
+  saveStoredEvents(newId, initialEvent)
+
+  // Async backend sync if badminton
+  if (rawSport === "badminton") {
+    createMatchOnBackend({
+      id: newId,
+      player1,
+      player2,
+      partner1,
+      partner2,
+      category: newMatch.category,
+      court: newMatch.court,
+      tournament: newMatch.tournament,
+      stage: newMatch.stage,
+      status: newMatch.status,
+    }).catch((err) => {
+      console.warn("Backend sync notice (createMatch):", err.message)
+    })
+  }
+
+  return newMatch
+}
+
+/**
+ * Delete a match (Admin only)
+ */
+export function deleteMatch(user, matchId) {
+  if (!user || user.role === "user") {
+    throw new Error("FORBIDDEN: Standard users cannot delete matches.")
+  }
+
+  const matches = loadStoredMatches()
+  const match = matches.find((m) => m.id === matchId)
+  if (match && !canAdminAccessMatch(user, matchId, match)) {
+    throw new Error("FORBIDDEN: You are not assigned to manage this match.")
+  }
+
+  removeStoredMatch(matchId)
+
+  try {
+    localStorage.removeItem(`${EVENTS_STORAGE_KEY}_${matchId}`)
+  } catch (e) {}
+
+  deleteMatchOnBackend(matchId).catch((err) => {
+    console.warn("Backend sync notice (deleteMatch):", err.message)
+  })
+
+  return true
+}
+
+/**
+ * Authoritative score correction with mandatory reason
+ */
+export function correctMatchScore(user, matchId, { scoreA, scoreB, servingSide, servingCourt, reason }) {
+  if (!user || user.role === "user") {
+    throw new Error("FORBIDDEN: Standard users cannot correct scores.")
+  }
+
+  if (!reason || !reason.trim()) {
+    throw new Error("REASON_REQUIRED: A valid audit explanation is mandatory for score corrections.")
+  }
+
+  const matches = loadStoredMatches()
+  const matchIndex = findMatchIndex(matches, matchId)
+  if (matchIndex === -1) {
+    throw new Error("NOT_FOUND: Match not found.")
+  }
+
+  const match = { ...matches[matchIndex] }
+  const prevScore = {
+    teamA: match.teamA?.score ?? 0,
+    teamB: match.teamB?.score ?? 0,
+  }
+
+  match.teamA = { ...match.teamA, score: Number(scoreA) }
+  match.teamB = { ...match.teamB, score: Number(scoreB) }
+  match.score1 = Number(scoreA)
+  match.score2 = Number(scoreB)
+
+  if (servingSide) match.servingSide = servingSide
+  if (servingCourt) match.servingCourt = servingCourt
+
+  match.version = (match.version || 1) + 1
+  matches[matchIndex] = match
+  saveStoredMatches(matches)
+
+  const events = loadStoredEvents(matchId)
+  events.unshift({
+    id: `evt-corr-${Date.now()}`,
+    matchId,
+    timestamp: new Date().toISOString(),
+    formattedTime: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+    adminId: user.id,
+    adminName: user.name,
+    actionType: "SCORE_CORRECTION",
+    description: `Administrative Score Correction: ${scoreA} - ${scoreB}. Reason: ${reason}`,
+    prevScore,
+    newScore: { teamA: Number(scoreA), teamB: Number(scoreB) },
+    isReversed: false,
+  })
+  saveStoredEvents(matchId, events)
+
+  if (match.sport === "badminton") {
+    correctScoreOnBackend(matchId, { scoreA, scoreB, servingSide, servingCourt, reason }).catch((err) => {
+      console.warn("Backend sync notice (correctScore):", err.message)
     })
   }
 

@@ -1,35 +1,63 @@
-import { useState, useEffect } from "react"
-import initialScheduleData from "../data/schedule"
+import { useState, useEffect, useCallback } from "react"
 import ScheduleRow from "./BadmintonScheduleRow"
-import { fetchBadmintonSchedule } from "../services/badmintonApiService"
+import {
+  fetchBadmintonSchedule,
+  subscribeToBadmintonLiveScores,
+  subscribeToMatchDeletion,
+  subscribeToMatchUpdates,
+  subscribeToScheduleUpdates,
+} from "../services/badmintonApiService"
 
 const filters = ["ALL", "LIVE", "UPCOMING", "COMPLETED"]
 
 export default function Schedule() {
   const [activeFilter, setActiveFilter] = useState("ALL")
-  const [matches, setMatches] = useState(initialScheduleData)
+  const [matches, setMatches] = useState([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Fetch matches / previous matches from Kotlin backend whenever filter changes
-  useEffect(() => {
-    let isMounted = true
-
-    async function loadMatches() {
+  const loadMatches = useCallback(async () => {
+    try {
       const data = await fetchBadmintonSchedule(activeFilter)
-      if (isMounted && data && data.length > 0) {
+      if (Array.isArray(data)) {
         setMatches(data)
+      } else {
+        setMatches([])
       }
-    }
-
-    loadMatches()
-
-    return () => {
-      isMounted = false
+    } catch (e) {
+      console.warn("Failed to load badminton schedule:", e)
+      setMatches([])
+    } finally {
+      setIsLoading(false)
     }
   }, [activeFilter])
 
+  useEffect(() => {
+    loadMatches()
+
+    const unsubLive = subscribeToBadmintonLiveScores(() => loadMatches())
+    const unsubDel = subscribeToMatchDeletion(({ matchId }) => {
+      if (matchId) {
+        setMatches((prev) => prev.filter((m) => m.id !== matchId))
+      } else {
+        loadMatches()
+      }
+    })
+    const unsubMatches = subscribeToMatchUpdates(() => loadMatches())
+    const unsubSched = subscribeToScheduleUpdates(() => loadMatches())
+
+    const interval = setInterval(loadMatches, 4000)
+
+    return () => {
+      unsubLive()
+      unsubDel()
+      unsubMatches()
+      unsubSched()
+      clearInterval(interval)
+    }
+  }, [loadMatches])
+
   const filteredMatches = matches.filter(
-    (match) =>
-      activeFilter === "ALL" || match.status === activeFilter
+    (match) => activeFilter === "ALL" || match.status === activeFilter
   )
 
   return (
@@ -38,7 +66,6 @@ export default function Schedule() {
       className="border-t border-white/10 px-5 py-24 md:px-10 md:py-32"
     >
       <div className="mx-auto max-w-7xl">
-
         {/* Heading */}
         <div className="mb-12 flex flex-col justify-between gap-6 md:flex-row md:items-end">
           <div>
@@ -81,7 +108,7 @@ export default function Schedule() {
         </div>
 
         {/* Schedule table */}
-        <div className="border border-white/10 bg-[#0C0E0D]">
+        <div className="border border-white/10 bg-[#0C0E0D] rounded-xl overflow-hidden">
           <div className="hidden grid-cols-[100px_1fr_1.5fr_120px] gap-4 border-b border-white/10 px-6 py-4 text-[9px] font-bold tracking-widest text-gray-500 md:grid">
             <span>TIME</span>
             <span>MATCH</span>
@@ -94,9 +121,12 @@ export default function Schedule() {
               <ScheduleRow key={match.id} match={match} />
             ))
           ) : (
-            <p className="px-6 py-12 text-center text-sm text-gray-500">
-              No matches found for this filter.
-            </p>
+            <div className="px-6 py-16 text-center text-sm text-gray-500 font-mono">
+              <p className="text-white font-bold mb-1">NO MATCHES SCHEDULED YET</p>
+              <p className="text-xs text-gray-400">
+                Matches will appear here as soon as administrators schedule them on the courts.
+              </p>
+            </div>
           )}
         </div>
 

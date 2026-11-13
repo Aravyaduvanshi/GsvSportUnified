@@ -8,59 +8,85 @@ import { CheckCircle, AlertTriangle, ShieldCheck } from "lucide-react"
 
 
 
-function getTeamStats(match, side) {
-  const team = side === "A" ? match.teamA : match.teamB
+function getTeamStats(match, side, events = []) {
+  if (!match) return []
+  const team = side === "A" 
+    ? (match.teamA || { name: match.player1 || "PLAYER 1", score: match.score1 ?? 0, setsWon: match.setsWon1 ?? 0 })
+    : (match.teamB || { name: match.player2 || "PLAYER 2", score: match.score2 ?? 0, setsWon: match.setsWon2 ?? 0 })
   const stats = match.stats?.[side === "A" ? "teamA" : "teamB"] || {}
+  const teamName = (team?.name || (side === "A" ? match.player1 : match.player2) || "").toLowerCase()
 
-  const value = (item) => item ?? "—"
+  let computedAces = stats.aces
+  let computedErrors = stats.errors
 
-  if (match.sport === "badminton") {
+  if (computedAces === undefined && Array.isArray(events)) {
+    computedAces = events.filter((e) => {
+      const desc = (e.description || "").toLowerCase()
+      const type = (e.actionType || "").toLowerCase()
+      return (desc.includes("ace") || type.includes("ace")) && (desc.includes(teamName) || e.scoringTeam === side)
+    }).length
+  }
+
+  if (computedErrors === undefined && Array.isArray(events)) {
+    computedErrors = events.filter((e) => {
+      const desc = (e.description || "").toLowerCase()
+      const type = (e.actionType || "").toLowerCase()
+      return (desc.includes("error") || type.includes("error")) && (desc.includes(teamName) || e.scoringTeam === side)
+    }).length
+  }
+
+  const value = (item) => item ?? 0
+
+  if (match.sport === "badminton" || !match.sport) {
     return [
-      { label: "CURRENT POINTS", value: value(team.score) },
-      { label: "SETS WON", value: value(team.setsWon) },
-      { label: "ACES", value: value(stats.aces) },
-      { label: "ERRORS", value: value(stats.errors) },
+      { label: "CURRENT POINTS", value: team?.score ?? (side === "A" ? match.score1 : match.score2) ?? 0 },
+      { label: "SETS WON", value: team?.setsWon ?? (side === "A" ? match.setsWon1 : match.setsWon2) ?? 0 },
+      { label: "ACES", value: value(computedAces) },
+      { label: "ERRORS", value: value(computedErrors) },
     ]
   }
 
   if (match.sport === "cricket") {
     return [
-      { label: "RUNS", value: value(team.runs) },
-      { label: "WICKETS", value: value(team.wickets) },
-      { label: "OVERS", value: value(team.overs) },
-      { label: "EXTRAS", value: value(stats.extras) },
-      { label: "BOUNDARIES", value: value(stats.boundaries) },
-      { label: "RUN RATE", value: value(stats.runRate) },
+      { label: "RUNS", value: value(team?.runs ?? 0) },
+      { label: "WICKETS", value: value(team?.wickets ?? 0) },
+      { label: "OVERS", value: value(team?.overs ?? 0) },
+      { label: "EXTRAS", value: value(stats.extras ?? 0) },
+      { label: "BOUNDARIES", value: value(stats.boundaries ?? 0) },
+      { label: "RUN RATE", value: value(stats.runRate ?? "0.0") },
     ]
   }
 
   if (match.sport === "basketball") {
     return [
-      { label: "POINTS", value: value(team.score) },
-      { label: "FOULS", value: value(team.fouls) },
-      { label: "TIMEOUTS", value: value(team.timeouts) },
-      { label: "3-POINTERS", value: value(stats.threePointers) },
-      { label: "FIELD GOALS", value: value(stats.fieldGoals) },
-      { label: "FREE THROWS", value: value(stats.freeThrows) },
+      { label: "POINTS", value: value(team?.score ?? 0) },
+      { label: "FOULS", value: value(team?.fouls ?? 0) },
+      { label: "TIMEOUTS", value: value(team?.timeouts ?? 0) },
+      { label: "3-POINTERS", value: value(stats.threePointers ?? 0) },
+      { label: "FIELD GOALS", value: value(stats.fieldGoals ?? 0) },
+      { label: "FREE THROWS", value: value(stats.freeThrows ?? 0) },
     ]
   }
 
   if (match.sport === "throwball") {
-  return [
-    { label: "CURRENT POINTS", value: value(team.score) },
-    { label: "SETS WON", value: value(team.setsWon) },
-    { label: "SERVICE ERRORS", value: value(stats.serviceErrors) },
-    { label: "FAULTS", value: value(stats.faults) },
-  ]
-}
+    return [
+      { label: "CURRENT POINTS", value: value(team?.score ?? 0) },
+      { label: "SETS WON", value: value(team?.setsWon ?? 0) },
+      { label: "SERVICE ERRORS", value: value(stats.serviceErrors ?? 0) },
+      { label: "FAULTS", value: value(stats.faults ?? 0) },
+    ]
+  }
 
   return []
 }
 
-function TeamStatsSection({ match, side }) {
-  const team = side === "A" ? match.teamA : match.teamB
+function TeamStatsSection({ match, side, events = [] }) {
+  const team = side === "A" 
+    ? (match.teamA || { name: match.player1 || "PLAYER 1" })
+    : (match.teamB || { name: match.player2 || "PLAYER 2" })
+  const teamName = team?.name || (side === "A" ? match.player1 : match.player2) || (side === "A" ? "PLAYER 1" : "PLAYER 2")
   const accent = side === "A" ? "#FFAE00" : "#35C5F4"
-  const stats = getTeamStats(match, side)
+  const stats = getTeamStats(match, side, events)
 
   return (
     <section>
@@ -68,7 +94,7 @@ function TeamStatsSection({ match, side }) {
         className="mb-3 text-xs font-black uppercase tracking-wider"
         style={{ color: accent }}
       >
-        {team.name}
+        {teamName}
       </p>
 
       <div className="overflow-hidden rounded border border-[#25334B] bg-[#17243A]/60">
@@ -107,8 +133,10 @@ export default function MatchControlInfoPanel({
   onRecordFault,
   onCompleteMatch,
   isPending = false,
+  isUserFacing = false,
+  initialTab = "STATS",
 }) {
-  const [activeTab, setActiveTab] = useState("STATS")
+  const [activeTab, setActiveTab] = useState(initialTab)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
 
   const [showFaultForm, setShowFaultForm] = useState(false)
@@ -131,18 +159,23 @@ const faultOptions =
   const isBasketball = match.sport === "basketball"
 
   const faultsTabLabel = isCricket ? "WICKETS" : isBasketball ? "FOULS" : "FAULTS"
-  const sortedEvents = [...events].sort((a, b) => {
-  const timeA = new Date(a.timestamp || 0).getTime()
-  const timeB = new Date(b.timestamp || 0).getTime()
+  
+  // Public user facing views exclude the FAULTS tab (faults is admin-only)
+  const availableTabs = isUserFacing
+    ? ["LOG", "STATS", "MATCH"]
+    : ["LOG", "STATS", faultsTabLabel, "MATCH"]
 
-  return timeB - timeA
-})
+  const sortedEvents = [...events].sort((a, b) => {
+    const timeA = new Date(a.timestamp || 0).getTime()
+    const timeB = new Date(b.timestamp || 0).getTime()
+    return timeB - timeA
+  })
 
   return (
     <div className="flex flex-col h-full border border-[#25334B] bg-[#0F1A2D] rounded-lg overflow-hidden shadow-xl">
       {/* Tab Navigation Header (Matches reference screenshot's tabs) */}
       <div className="flex items-center border-b border-[#25334B] bg-[#080D18] px-2 text-xs font-mono font-bold">
-        {["LOG", "STATS", faultsTabLabel, "MATCH"].map((tab) => {
+        {availableTabs.map((tab) => {
           const isActive =
             (tab === faultsTabLabel && activeTab === "FAULTS") || activeTab === tab
           return (
@@ -186,8 +219,8 @@ const faultOptions =
       </span>
     </div>
 
-    <TeamStatsSection match={match} side="A" />
-    <TeamStatsSection match={match} side="B" />
+    <TeamStatsSection match={match} side="A" events={events} />
+    <TeamStatsSection match={match} side="B" events={events} />
 
     {match.sport === "badminton" &&
       Array.isArray(match.setHistory) &&
@@ -320,7 +353,7 @@ const faultOptions =
 
               {/* Description */}
               <p className="mt-3 text-sm font-semibold leading-relaxed text-white">
-                {evt.description || "Match event recorded"}
+                {String(evt.description || "Match event recorded").replace(/\(Error\)/gi, "(Opponent Error)")}
               </p>
 
               {/* Admin attribution */}
@@ -550,28 +583,42 @@ onSubmit={(event) => {
               </div>
             </div>
 
-            {/* Complete Match Action Button */}
-            <div className="border border-white/10 bg-[#080D18] p-4 rounded text-center">
-              <p className="text-[11px] text-[#8491A7] mb-3">
-                When play concludes, finalizing the match will lock live score modifications and update public fixtures.
-              </p>
+            {/* Complete Match Action Button or User Rules */}
+            {isUserFacing ? (
+              <div className="border border-white/10 bg-[#080D18] p-4 rounded text-center">
+                <span className="text-[10px] text-[#8491A7] uppercase block mb-1">
+                  OFFICIAL SCORING RULE
+                </span>
+                <span className="text-xs font-bold text-[#DFFF00]">
+                  BWF Standard 21-Point Rally Point System
+                </span>
+                <p className="mt-2 text-[10px] text-gray-400">
+                  Points are awarded on every rally. The side winning the rally adds a point to their score and serves the next point. Matches are played Best of 3 sets to 21 points.
+                </p>
+              </div>
+            ) : (
+              <div className="border border-white/10 bg-[#080D18] p-4 rounded text-center">
+                <p className="text-[11px] text-[#8491A7] mb-3">
+                  When play concludes, finalizing the match will lock live score modifications and update public fixtures.
+                </p>
 
-              {match.status === "COMPLETED" ? (
-                <div className="border border-emerald-500/40 bg-emerald-500/10 p-3 rounded text-emerald-300 font-bold flex items-center justify-center gap-2">
-                  <CheckCircle size={16} />
-                  <span>MATCH COMPLETED & FINALIZED</span>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  disabled={isPending}
-                  onClick={() => setShowConfirmModal(true)}
-                  className="w-full border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 py-3 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer"
-                >
-                  FINALIZE & COMPLETE MATCH
-                </button>
-              )}
-            </div>
+                {match.status === "COMPLETED" ? (
+                  <div className="border border-emerald-500/40 bg-emerald-500/10 p-3 rounded text-emerald-300 font-bold flex items-center justify-center gap-2">
+                    <CheckCircle size={16} />
+                    <span>MATCH COMPLETED & FINALIZED</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isPending}
+                    onClick={() => setShowConfirmModal(true)}
+                    className="w-full border border-rose-500/50 bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 py-3 rounded text-xs font-bold uppercase tracking-wider transition cursor-pointer"
+                  >
+                    FINALIZE & COMPLETE MATCH
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,8 +1,50 @@
-
-import players from "../data/players"
+import { useState, useEffect, useCallback } from "react"
+import { fetchTournaments, subscribeToTournaments, subscribeToStompTopic } from "../services/badmintonApiService"
 import PlayerCard from "./BadmintonPlayerCard"
+import defaultPlayers from "../data/players"
 
 export default function PlayerGrid() {
+  const [activePlayers, setActivePlayers] = useState(defaultPlayers)
+
+  const loadPlayers = useCallback(async () => {
+    try {
+      const tourList = await fetchTournaments()
+      if (Array.isArray(tourList) && tourList.length > 0) {
+        const activeTour = tourList[0]
+        const participants = activeTour.participants || []
+        if (participants.length > 0) {
+          const mapped = participants.map((p, idx) => ({
+            id: p.id || `seed-${idx + 1}`,
+            name: p.name,
+            rank: `#${p.seed || idx + 1} Seed`,
+            role: "Singles Contender",
+            stats: { winRate: "88%", matches: 12, smashSpeed: "380 km/h" },
+            image: defaultPlayers[idx % defaultPlayers.length]?.image || defaultPlayers[0].image,
+          }))
+          setActivePlayers(mapped)
+          return
+        }
+      }
+      setActivePlayers(defaultPlayers)
+    } catch (e) {
+      setActivePlayers(defaultPlayers)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadPlayers()
+
+    const unsubTourn = subscribeToTournaments(() => loadPlayers())
+    const unsubDel = subscribeToStompTopic("/topic/tournaments/deleted", () => loadPlayers())
+    const interval = setInterval(loadPlayers, 4000)
+
+    return () => {
+      unsubTourn()
+      unsubDel()
+      clearInterval(interval)
+    }
+  }, [loadPlayers])
+
   return (
     <section
       id="players"
@@ -21,14 +63,14 @@ export default function PlayerGrid() {
         </div>
 
         <p className="max-w-xs text-sm leading-6 text-gray-400">
-          Meet the athletes representing your campus.
+          Official championship contenders and seeded varsity players.
         </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {players.map((player, index) => (
+        {activePlayers.map((player, index) => (
           <PlayerCard
-            key={player.id}
+            key={player.id || index}
             player={player}
             index={index}
           />

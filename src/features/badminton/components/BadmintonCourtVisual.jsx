@@ -10,11 +10,65 @@ import { RefreshCw } from "lucide-react"
  */
 export default function BadmintonCourtVisual({
   match,
+  courtName = "Badminton Court 01",
   interactive = false,
   onSwitchServer = null,
   className = "",
 }) {
-  if (!match) return null
+  if (!match || match.isYetToBePlayed) {
+    const label = (match?.court || courtName || "Badminton Court 01").toUpperCase()
+    return (
+      <div className={`flex flex-col w-full ${className}`}>
+        <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] min-h-[280px] sm:min-h-[360px] bg-gradient-to-b from-[#B67E3F] via-[#BD8246] to-[#A86F33] rounded-xl border-2 border-[#8E5E2A] overflow-hidden shadow-2xl select-none">
+          {/* Subtle wood plank texture overlay */}
+          <div 
+            className="absolute inset-0 opacity-15 pointer-events-none"
+            style={{
+              backgroundImage: "repeating-linear-gradient(90deg, #000 0px, #000 1px, transparent 1px, transparent 36px)",
+            }}
+          />
+
+          {/* BWF Court Line Markings SVG */}
+          <svg className="absolute inset-0 h-full w-full pointer-events-none" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="netGlowEmpty" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.7" />
+                <stop offset="50%" stopColor="#FFFFFF" stopOpacity="1" />
+                <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.7" />
+              </linearGradient>
+            </defs>
+            <rect x="5%" y="5%" width="90%" height="90%" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeOpacity="0.88" />
+            <line x1="12%" y1="5%" x2="12%" y2="95%" stroke="#FFFFFF" strokeWidth="1.8" strokeOpacity="0.75" />
+            <line x1="88%" y1="5%" x2="88%" y2="95%" stroke="#FFFFFF" strokeWidth="1.8" strokeOpacity="0.75" />
+            <line x1="5%" y1="12%" x2="95%" y2="12%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.7" />
+            <line x1="5%" y1="88%" x2="95%" y2="88%" stroke="#FFFFFF" strokeWidth="1.5" strokeOpacity="0.7" />
+            <line x1="5%" y1="36%" x2="95%" y2="36%" stroke="#FFFFFF" strokeWidth="1.8" strokeOpacity="0.75" />
+            <line x1="5%" y1="64%" x2="95%" y2="64%" stroke="#FFFFFF" strokeWidth="1.8" strokeOpacity="0.75" />
+            <line x1="50%" y1="5%" x2="50%" y2="36%" stroke="#FFFFFF" strokeWidth="1.8" strokeOpacity="0.75" />
+            <line x1="50%" y1="64%" x2="50%" y2="95%" stroke="#FFFFFF" strokeWidth="1.8" strokeOpacity="0.75" />
+            <line x1="5%" y1="50%" x2="95%" y2="50%" stroke="url(#netGlowEmpty)" strokeWidth="3" strokeDasharray="10 7" strokeOpacity="0.95" />
+          </svg>
+
+          {/* Centered Status Badge */}
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4">
+            <div className="flex flex-col items-center justify-center rounded-xl border border-white/20 bg-black/65 backdrop-blur-md px-6 py-4 shadow-2xl text-center">
+              <span className="text-2xl mb-1">🏸</span>
+              <p className="text-xs sm:text-sm font-black tracking-widest text-[#DFFF00] uppercase">
+                {label} · YET TO BE PLAYED
+              </p>
+              <p className="mt-1 text-[10px] text-gray-300 font-mono">
+                Court ready for next match fixture
+              </p>
+            </div>
+          </div>
+
+          <div className="absolute bottom-2 left-3 text-[9px] font-mono tracking-widest text-black/60 uppercase">
+            {label} · READY
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // Resolve teams & player info safely
   const teamA = match.teamA || {

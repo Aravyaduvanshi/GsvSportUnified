@@ -1,6 +1,5 @@
 
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
 
 const navLinks = [
   { label: "HOME", href: "#home" },
@@ -76,12 +75,6 @@ export default function Navbar() {
 
         {/* Desktop actions */}
         <div className="hidden items-center gap-3 sm:flex">
-          <Link
-            to="/sport-admin/matches/badminton-1/control"
-            className="border border-white/20 bg-white/5 px-3 py-2 text-[10px] font-bold tracking-widest text-gray-300 transition hover:border-[#DFFF00] hover:text-[#DFFF00]"
-          >
-            SCOREKEEPER PORTAL
-          </Link>
           <a
             href="#live"
             className="flex items-center gap-2 border border-[#DFFF00]/30 bg-[#DFFF00]/5 px-4 py-2 text-[10px] font-bold tracking-widest text-[#DFFF00] transition hover:bg-[#DFFF00] hover:text-black"
@@ -121,14 +114,6 @@ export default function Navbar() {
             {link.label}
           </a>
         ))}
-
-        <Link
-          to="/sport-admin/matches/badminton-1/control"
-          onClick={() => setMenuOpen(false)}
-          className="block border-b border-white/10 py-4 text-xs font-bold tracking-widest text-[#DFFF00]"
-        >
-          🏸 SCOREKEEPER PORTAL
-        </Link>
 
         <p className="py-4 text-[10px] font-bold tracking-widest text-[#DFFF00]">
           ● LIVE NOW

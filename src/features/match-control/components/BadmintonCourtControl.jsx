@@ -9,11 +9,11 @@ import { Undo2, RotateCw } from "lucide-react"
 import BadmintonCourtVisual from "../../badminton/components/BadmintonCourtVisual"
 
 const actionTypes = [
-  { id: "Rally", label: "Rally Winner", icon: "🏸" },
-  { id: "Smash", label: "Smash Kill", icon: "⚡" },
-  { id: "Ace", label: "Service Ace", icon: "🎯" },
-  { id: "Drop", label: "Net Drop", icon: "🪶" },
-  { id: "Error", label: "Opponent Error", icon: "❌" },
+  { id: "Smash Winner", label: "Smash Winner", icon: "⚡" },
+  { id: "Rally Point", label: "Rally Point", icon: "🏸" },
+  { id: "Service Ace", label: "Service Ace", icon: "🎯" },
+  { id: "Net Drop", label: "Net Drop", icon: "🪶" },
+  { id: "Opponent Error", label: "Opponent Error", icon: "❌" },
 ]
 
 export default function BadmintonCourtControl({
@@ -23,7 +23,7 @@ export default function BadmintonCourtControl({
   onSwitchServer,
   isPending = false,
 }) {
-  const [selectedType, setSelectedType] = useState("Smash")
+  const [selectedType, setSelectedType] = useState("Smash Winner")
 
   const handlePoint = (side) => {
     onScorePoint({

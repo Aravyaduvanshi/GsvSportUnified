@@ -1,167 +1,131 @@
-
-
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
-import {
-  MOCK_ADMIN_ACCOUNTS,
-  setCurrentAdminUser,
-} from "../services/adminAuthService"
+import { useNavigate, Link } from "react-router-dom"
+import { ShieldCheck, Lock, User, ArrowLeft, KeyRound, AlertCircle, Eye, EyeOff } from "lucide-react"
+import { loginAdmin } from "../services/adminAuthService"
 
 export default function AdminAccessPage() {
   const navigate = useNavigate()
-  const [selectedId, setSelectedId] = useState("")
+  const [identifier, setIdentifier] = useState("")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleAccess = () => {
-    if (!selectedId) {
-      setError("Select a demo account to continue.")
-      return
+  const handleLogin = async (e) => {
+    e.preventDefault()
+    setError("")
+    setIsLoading(true)
+
+    try {
+      const user = await loginAdmin(identifier.trim(), password)
+
+      // Determine redirection based on sport admin role
+      const sportParam = user.primarySport ? user.primarySport.toLowerCase() : "badminton"
+      const destination =
+        user.role === "super_admin"
+          ? "/sport-admin"
+          : `/sport-admin?sport=${sportParam}`
+
+      navigate(destination, { replace: true })
+    } catch (err) {
+      setError(err.message || "Invalid administrator credentials.")
+      setPassword("")
+    } finally {
+      setIsLoading(false)
     }
-
-    const user = setCurrentAdminUser(selectedId)
-
-    if (!user) {
-      setError("Unable to select this account.")
-      return
-    }
-
-    const destination =
-      user.role === "super_admin" ? "/admin" : "/sport-admin"
-
-    navigate(destination, { replace: true })
   }
 
   return (
-    <main className="min-h-screen bg-[#080D18] px-5 py-16 text-white">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-10">
-          <p className="text-xs font-bold tracking-[0.3em] text-[#07F080]">
-            GSV SPORTS / ADMIN ACCESS
-          </p>
+    <main className="min-h-screen bg-[#080D18] flex flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 text-white select-none">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-2 text-xs font-bold tracking-widest text-gray-500 hover:text-white transition mb-6"
+        >
+          <ArrowLeft size={14} />
+          RETURN TO PUBLIC WEBSITE
+        </Link>
 
-          <h1 className="mt-5 text-3xl font-black tracking-tight sm:text-5xl">
-            YOUR WORKSPACE.
-            <br />
-            <span className="text-[#07F080]">YOUR RESPONSIBILITY.</span>
-          </h1>
-
-          <p className="mt-4 max-w-2xl text-sm leading-7 text-gray-400">
-            Select a demonstration account to preview the workspace
-            associated with its role. This screen uses local mock
-            authentication and does not verify a real identity.
-          </p>
-        </header>
-
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-bold uppercase tracking-widest">
-            Select an account
-          </h2>
-
-          <span className="border border-amber-400/30 bg-amber-400/10 px-3 py-1 text-[10px] font-bold tracking-wider text-amber-300">
-            DEMO MODE
-          </span>
+        <div className="flex items-center gap-2 text-[10px] font-black tracking-[0.25em] text-[#07F080] uppercase">
+          <ShieldCheck size={16} />
+          GSV SPORTS · OFFICIALS ONLY
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MOCK_ADMIN_ACCOUNTS.map((user) => {
-            const isSuperAdmin = user.role === "super_admin"
-            const selected = selectedId === user.id
-
-            return (
-              <button
-                key={user.id}
-                type="button"
-                onClick={() => {
-                  setSelectedId(user.id)
-                  setError("")
-                }}
-                aria-pressed={selected}
-                className={`group min-h-52 border p-5 text-left transition duration-200 ${
-                  selected
-                    ? "border-[#07F080] bg-[#07F080]/10"
-                    : "border-white/10 bg-[#111827] hover:border-white/30"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div
-                    className={`grid h-12 w-12 place-items-center border text-sm font-black ${
-                      isSuperAdmin
-                        ? "border-amber-400/40 bg-amber-400/10 text-amber-300"
-                        : "border-sky-400/40 bg-sky-400/10 text-sky-300"
-                    }`}
-                  >
-                    {user.avatar}
-                  </div>
-
-                  <span
-                    className={`border px-2 py-1 text-[9px] font-bold uppercase tracking-wider ${
-                      isSuperAdmin
-                        ? "border-amber-400/30 text-amber-300"
-                        : "border-sky-400/30 text-sky-300"
-                    }`}
-                  >
-                    {isSuperAdmin ? "Super admin" : "Sport admin"}
-                  </span>
-                </div>
-
-                <h3 className="mt-5 text-base font-bold">
-                  {user.name}
-                </h3>
-
-                <p className="mt-1 break-all text-xs text-gray-400">
-                  {user.email}
-                </p>
-
-                <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3">
-                  <span className="text-[10px] uppercase tracking-wider text-gray-500">
-                    {user.primarySport}
-                  </span>
-
-                  <span
-                    className={
-                      selected
-                        ? "text-xs font-bold text-[#07F080]"
-                        : "text-xs text-gray-400"
-                    }
-                  >
-                    {selected ? "SELECTED ✓" : "SELECT →"}
-                  </span>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-
-        {error && (
-          <p role="alert" className="mt-5 text-sm text-red-400">
-            {error}
-          </p>
-        )}
-
-        <div className="mt-8 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <button
-            type="button"
-            onClick={() => navigate("/")}
-            className="text-left text-xs font-bold tracking-wider text-gray-400 transition hover:text-white"
-          >
-            ← RETURN TO PUBLIC WEBSITE
-          </button>
-
-          <button
-            type="button"
-            onClick={handleAccess}
-            className="bg-[#07F080] px-7 py-4 text-xs font-black tracking-widest text-black transition hover:bg-[#66FFA8] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            ENTER WORKSPACE →
-          </button>
-        </div>
-
-        <p className="mt-8 text-[11px] leading-6 text-gray-500">
-          Frontend demonstration only. Account selection is not
-          authentication, and localStorage does not provide a security
-          boundary. Do not use this flow to protect real administrative
-          operations.
+        <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl uppercase">
+          ADMIN SIGN IN<span className="text-[#07F080]">.</span>
+        </h2>
+        <p className="mt-2 text-xs text-gray-400">
+          Enter your username and password to access your assigned sport control console.
         </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="border border-white/10 bg-[#0F172A] p-6 sm:p-8 rounded-lg shadow-2xl">
+          {error && (
+            <div className="mb-5 flex items-start gap-2.5 rounded border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-300 font-mono">
+              <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-400" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-5" autoComplete="off">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Admin Username or Email
+              </label>
+              <div className="relative mt-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  <User size={15} />
+                </div>
+                <input
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  placeholder="Enter admin username or email"
+                  autoComplete="username"
+                  className="w-full border border-white/10 bg-[#1E293B] pl-9 pr-3 py-2.5 text-xs text-white outline-none focus:border-[#07F080] font-mono transition"
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-400">
+                Password
+              </label>
+              <div className="relative mt-1">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  <Lock size={15} />
+                </div>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  className="w-full border border-white/10 bg-[#1E293B] pl-9 pr-10 py-2.5 text-xs text-white outline-none focus:border-[#07F080] font-mono transition"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full mt-2 flex items-center justify-center gap-2 border border-[#07F080] bg-[#07F080] px-4 py-3 text-xs font-black tracking-widest text-black transition hover:bg-[#07F080]/90 disabled:opacity-50 cursor-pointer uppercase"
+            >
+              <KeyRound size={15} />
+              {isLoading ? "VERIFYING CREDENTIALS..." : "SIGN IN & ENTER WORKSPACE →"}
+            </button>
+          </form>
+        </div>
       </div>
     </main>
   )

@@ -2,12 +2,18 @@
  * MatchesPage
  * Route: /matches
  * Displays campus match fixtures, schedules, and filters across Badminton, Cricket, and Basketball.
+ * Backend-connected and synchronized in real-time across multiple browsers via WebSockets & authoritative polling.
  */
-import { useState } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { Link } from "react-router-dom"
 import MatchCard from "../../../components/molecules/MatchCard"
-import badmintonMatches from "../../badminton/data/matches"
-import badmintonSchedule from "../../badminton/data/schedule"
+import {
+  fetchBadmintonSchedule,
+  subscribeToBadmintonLiveScores,
+  subscribeToMatchDeletion,
+  subscribeToMatchUpdates,
+  subscribeToScheduleUpdates,
+} from "../../badminton/services/badmintonApiService"
 import { cricketMatches } from "../../cricket/data/cricketMatches"
 import { basketballGames } from "../../basketball/data/basketballGames"
 
@@ -17,72 +23,150 @@ const sportFilters = ["ALL SPORTS", "BADMINTON", "CRICKET", "BASKETBALL"]
 export default function MatchesPage() {
   const [activeFilter, setActiveFilter] = useState("ALL STATUS")
   const [sportFilter, setSportFilter] = useState("ALL SPORTS")
+  const [backendBadmintonMatches, setBackendBadmintonMatches] = useState([])
 
-  // Combine live matches & scheduled matches across Badminton, Cricket, and Basketball
-  const allMatches = [
-    // Badminton
-    ...badmintonMatches.map((m) => ({
-      id: `badminton-${m.id}`,
-      sport: "Badminton",
-      category: m.category,
-      court: m.court,
-      status: m.status,
-      player1: m.player1,
-      player2: m.player2,
-      score1: m.score1,
-      score2: m.score2,
-      link: "/sports/badminton#live",
-    })),
-    ...badmintonSchedule.map((s) => ({
-      id: `badminton-sched-${s.id}`,
-      sport: "Badminton",
-      category: s.category,
-      court: s.court,
-      status: s.status,
-      player1: s.player1,
-      player2: s.player2,
-      score1: "—",
-      score2: "—",
-      time: s.time,
-      link: "/sports/badminton#schedule",
-    })),
+  const loadMatches = useCallback(async () => {
+    try {
+      const data = await fetchBadmintonSchedule("ALL")
+      if (Array.isArray(data)) {
+        setBackendBadmintonMatches(data)
+      }
+    } catch (e) {
+      console.warn("Failed to fetch matches for schedule:", e)
+    }
+  }, [])
 
-    // Cricket
-    ...cricketMatches.map((c) => ({
-      id: `cricket-${c.id}`,
-      sport: "Cricket",
-      category: `${c.format} · ${c.stage}`,
-      court: c.venue.split(",")[0],
-      status: c.status,
-      player1: c.team1.shortName,
-      player2: c.team2.shortName,
-      score1: c.team1.runs !== null && c.team1.runs !== undefined ? `${c.team1.runs}/${c.team1.wickets}` : "—",
-      score2: c.team2.runs !== null && c.team2.runs !== undefined ? `${c.team2.runs}/${c.team2.wickets}` : "—",
-      time: `${c.date} ${c.time || ""}`,
-      link: "/sports/cricket#live",
-    })),
+  useEffect(() => {
+    loadMatches()
 
-    // Basketball
-    ...basketballGames.map((b) => ({
-      id: `basketball-${b.id}`,
-      sport: "Basketball",
-      category: `5v5 · ${b.period}`,
-      court: b.court.split("·")[0].trim(),
-      status: b.status === "FINAL" ? "COMPLETED" : b.status,
-      player1: b.homeTeam.shortName,
-      player2: b.awayTeam.shortName,
-      score1: b.homeTeam.score !== null ? b.homeTeam.score : "—",
-      score2: b.awayTeam.score !== null ? b.awayTeam.score : "—",
-      time: `${b.date} ${b.time || ""}`,
-      link: "/sports/basketball#live",
-    })),
-  ]
+    const unsubLive = subscribeToBadmintonLiveScores((match) => {
+      if (!match?.id) return
+      setBackendBadmintonMatches((prev) => {
+        if (match.status === "DELETED") {
+          return prev.filter((m) => m.id !== match.id && m.id !== match.matchId)
+        }
+        const idx = prev.findIndex((m) => m.id === match.id)
+        if (idx !== -1) {
+          const next = [...prev]
+          next[idx] = match
+          return next
+        }
+        return [match, ...prev]
+      })
+    })
+
+    const unsubDel = subscribeToMatchDeletion(({ matchId }) => {
+      if (matchId) {
+        setBackendBadmintonMatches((prev) => prev.filter((m) => m.id !== matchId))
+      } else {
+        loadMatches()
+      }
+    })
+
+    const unsubUpdates = subscribeToMatchUpdates((match) => {
+      if (!match?.id) return
+      setBackendBadmintonMatches((prev) => {
+        if (match.status === "DELETED") {
+          return prev.filter((m) => m.id !== match.id && m.id !== match.matchId)
+        }
+        const idx = prev.findIndex((m) => m.id === match.id)
+        if (idx !== -1) {
+          const next = [...prev]
+          next[idx] = match
+          return next
+        }
+        return [match, ...prev]
+      })
+    })
+
+    const unsubSched = subscribeToScheduleUpdates((match) => {
+      if (!match?.id) return
+      setBackendBadmintonMatches((prev) => {
+        if (match.status === "DELETED") {
+          return prev.filter((m) => m.id !== match.id && m.id !== match.matchId)
+        }
+        const idx = prev.findIndex((m) => m.id === match.id)
+        if (idx !== -1) {
+          const next = [...prev]
+          next[idx] = match
+          return next
+        }
+        return [match, ...prev]
+      })
+    })
+
+    const interval = setInterval(loadMatches, 4000)
+
+    return () => {
+      unsubLive()
+      unsubDel()
+      unsubUpdates()
+      unsubSched()
+      clearInterval(interval)
+    }
+  }, [loadMatches])
+
+  // Combine live matches & scheduled matches across Badminton (from DB), Cricket, and Basketball
+  const allMatches = useMemo(() => {
+    const badmintonList = backendBadmintonMatches.map((m) => {
+      const p1 = m.teamA?.name || m.player1 || "Player 1"
+      const p2 = m.teamB?.name || m.player2 || "Player 2"
+      const s1 = m.status === "UPCOMING" ? "—" : (m.teamA?.score ?? m.score1 ?? 0)
+      const s2 = m.status === "UPCOMING" ? "—" : (m.teamB?.score ?? m.score2 ?? 0)
+      return {
+        id: m.id,
+        sport: "Badminton",
+        category: m.category || "Men's Singles",
+        court: m.court || m.venue || "Badminton Court 01",
+        status: m.status || "UPCOMING",
+        player1: p1,
+        player2: p2,
+        score1: s1,
+        score2: s2,
+        time: m.scheduledTime || m.time || "Scheduled Match",
+        link: m.status === "LIVE" ? "/sports/badminton#live" : "/sports/badminton#schedule",
+      }
+    })
+
+    return [
+      ...badmintonList,
+      // Cricket
+      ...cricketMatches.map((c) => ({
+        id: `cricket-${c.id}`,
+        sport: "Cricket",
+        category: `${c.format} · ${c.stage}`,
+        court: c.venue.split(",")[0],
+        status: c.status,
+        player1: c.team1.shortName,
+        player2: c.team2.shortName,
+        score1: c.team1.runs !== null && c.team1.runs !== undefined ? `${c.team1.runs}/${c.team1.wickets}` : "—",
+        score2: c.team2.runs !== null && c.team2.runs !== undefined ? `${c.team2.runs}/${c.team2.wickets}` : "—",
+        time: `${c.date} ${c.time || ""}`,
+        link: "/sports/cricket#live",
+      })),
+
+      // Basketball
+      ...basketballGames.map((b) => ({
+        id: `basketball-${b.id}`,
+        sport: "Basketball",
+        category: `5v5 · ${b.period}`,
+        court: b.court.split("·")[0].trim(),
+        status: b.status === "FINAL" ? "COMPLETED" : b.status,
+        player1: b.homeTeam.shortName,
+        player2: b.awayTeam.shortName,
+        score1: b.homeTeam.score !== null ? b.homeTeam.score : "—",
+        score2: b.awayTeam.score !== null ? b.awayTeam.score : "—",
+        time: `${b.date} ${b.time || ""}`,
+        link: "/sports/basketball#live",
+      })),
+    ]
+  }, [backendBadmintonMatches])
 
   const filteredMatches = allMatches.filter((match) => {
     const matchesStatus =
-      activeFilter === "ALL STATUS" || match.status === activeFilter
+      activeFilter === "ALL STATUS" || match.status.toUpperCase() === activeFilter.toUpperCase()
     const matchesSport =
-      sportFilter === "ALL SPORTS" || match.sport.toUpperCase() === sportFilter
+      sportFilter === "ALL SPORTS" || match.sport.toUpperCase() === sportFilter.toUpperCase()
     return matchesStatus && matchesSport
   })
 
