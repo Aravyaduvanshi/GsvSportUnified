@@ -3,7 +3,7 @@
  * Connects the React Frontend to the Kotlin Spring Boot Backend
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1"
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://gsvsports-app.onrender.com/api/v1"
 
 /**
  * Helper to retrieve current active demo admin token or ID
@@ -405,7 +405,7 @@ export function purgeLegacyLocalStorage() {
 // REAL-TIME WEBSOCKET (STOMP) MULTIPLEXED MANAGER
 // ==========================================
 
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8080/ws"
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL || "wss://gsvsports-app.onrender.com/ws"
 
 class StompClientManager {
   constructor() {
