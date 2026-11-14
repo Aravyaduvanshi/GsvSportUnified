@@ -24,7 +24,12 @@ export default function ScheduleRow({ match }) {
         <p className="text-[10px] font-bold tracking-widest text-[#DFFF00]">
           {match.category}
         </p>
-        <p className="mt-2 text-[10px] tracking-widest text-gray-500">
+        {match.tournament && (
+          <p className="text-[9px] text-gray-400 font-mono truncate max-w-[160px]" title={match.tournament}>
+            {match.tournament}
+          </p>
+        )}
+        <p className="mt-1 text-[10px] tracking-widest text-gray-500">
           {match.court}
         </p>
       </div>
