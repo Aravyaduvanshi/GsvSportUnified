@@ -259,11 +259,11 @@ export function buildBracketFromMatches(tournament, allMatches = []) {
   const tourMatches = (allMatches || []).filter((m) => {
     // 1. Strict tournamentId match
     if (m.tournamentId && m.tournamentId === tourId) return true
-    // 2. Strict ID prefix match (e.g. tour-173158...-r1-m1)
-    if (m.id && typeof m.id === "string" && m.id.startsWith(tourId)) return true
+    // 2. Strict ID prefix match (e.g. tour-173158...-r1-m1 or badminton-tour-173158...-r1-m1)
+    if (m.id && typeof m.id === "string" && (m.id.startsWith(tourId) || m.id.startsWith(`badminton-${tourId}`))) return true
 
     // 3. Match by tournament name ONLY if category also matches
-    if (m.tournament && m.tournament.trim().toLowerCase() === tournament.tournamentName.trim().toLowerCase()) {
+    if (m.tournament && tournament.tournamentName && m.tournament.trim().toLowerCase() === tournament.tournamentName.trim().toLowerCase()) {
       if (tourCatNormalized && m.category) {
         const matchCatNormalized = m.category.toString().toUpperCase().replace(/[\s_']/g, "")
         return matchCatNormalized === tourCatNormalized
@@ -285,8 +285,9 @@ export function buildBracketFromMatches(tournament, allMatches = []) {
 
     // Find matches matching this round strictly from this tournament's matches
     const roundMatches = tourMatches.filter((m) => {
-      if (m.id && m.id.startsWith(tourId) && m.id.includes(`-r${r}-`)) return true
-      if (m.stage && m.stage.toUpperCase() === roundTitle.toUpperCase()) return true
+      const matchBelongs = m.tournamentId === tourId || (m.id && (m.id.startsWith(tourId) || m.id.startsWith(`badminton-${tourId}`)))
+      if (matchBelongs && m.id && m.id.includes(`-r${r}-`)) return true
+      if (matchBelongs && m.stage && m.stage.toUpperCase() === roundTitle.toUpperCase()) return true
       return false
     })
 
@@ -296,17 +297,16 @@ export function buildBracketFromMatches(tournament, allMatches = []) {
       const matchId = `${tournament.id}-r${r}-m${m + 1}`
       // Look strictly for THIS tournament's match
       const existingMatch =
-        tourMatches.find((rm) => rm.id === matchId) ||
-        roundMatches.find((rm) => rm.id === matchId) ||
-        roundMatches[m]
+        tourMatches.find((rm) => rm.id === matchId || rm.id === `badminton-${matchId}` || (rm.id?.includes(`-r${r}-m${m + 1}`) && (rm.tournamentId === tourId || rm.id?.startsWith(tourId)))) ||
+        roundMatches.find((rm) => rm.id === matchId || rm.id === `badminton-${matchId}`)
 
       if (existingMatch) {
         builtRoundMatches.push({
           id: existingMatch.id,
           tournamentId: tournament.id,
           court: existingMatch.court || `Badminton Court 0${(m % 4) + 1}`,
-          player1: existingMatch.teamA?.name || existingMatch.player1 || "TBD",
-          player2: existingMatch.teamB?.name || existingMatch.player2 || "TBD",
+          player1: existingMatch.teamA?.name || existingMatch.player1 || (r === 1 && participants[m * 2] ? (participants[m * 2]?.name || participants[m * 2]?.player1Name) : "TBD"),
+          player2: existingMatch.teamB?.name || existingMatch.player2 || (r === 1 && participants[m * 2 + 1] ? (participants[m * 2 + 1]?.name || participants[m * 2 + 1]?.player1Name) : "TBD"),
           score1: existingMatch.scoreA ?? existingMatch.score1 ?? (existingMatch.teamA?.score ?? 0),
           score2: existingMatch.scoreB ?? existingMatch.score2 ?? (existingMatch.teamB?.score ?? 0),
           winner: existingMatch.winner || null,

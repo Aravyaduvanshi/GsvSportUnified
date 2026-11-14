@@ -1083,11 +1083,16 @@ export default function AssignedMatchesDashboard() {
     }
     if (window.confirm("Are you sure you want to delete this tournament and cascade delete all its fixtures?")) {
       try {
+        const targetTour = backendTournaments.find((t) => t.id === tournamentId)
+        const targetTourName = targetTour?.tournamentName?.trim().toLowerCase()
+        const targetTourCat = (targetTour?.category?.name || targetTour?.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+
         try {
           await deleteTournamentOnBackend(tournamentId)
         } catch (backendErr) {
           console.warn("Backend delete notice:", backendErr.message)
         }
+
         setBackendTournaments((prev) => {
           const updated = prev.filter((t) => t.id !== tournamentId)
           if (selectedTournamentId === tournamentId) {
@@ -1095,7 +1100,17 @@ export default function AssignedMatchesDashboard() {
           }
           return updated
         })
-        setBackendMatches((prev) => prev.filter((m) => m.tournamentId !== tournamentId && !m.id.startsWith(tournamentId)))
+
+        setBackendMatches((prev) => prev.filter((m) => {
+          if (m.tournamentId === tournamentId) return false
+          if (m.id && typeof m.id === "string" && (m.id.startsWith(tournamentId) || m.id.startsWith(`badminton-${tournamentId}`))) return false
+          if (targetTourName && m.tournament && m.tournament.trim().toLowerCase() === targetTourName) {
+            const matchCat = (m.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+            if (!targetTourCat || matchCat === targetTourCat) return false
+          }
+          return true
+        }))
+
         if (tournamentFilter === tournamentId) {
           setTournamentFilter("ALL")
         }
@@ -1105,7 +1120,15 @@ export default function AssignedMatchesDashboard() {
           const raw = localStorage.getItem("gsv_admin_matches_store_v6")
           if (raw) {
             const parsed = JSON.parse(raw)
-            const cleaned = parsed.filter((m) => m.tournamentId !== tournamentId && !m.id.startsWith(tournamentId))
+            const cleaned = parsed.filter((m) => {
+              if (m.tournamentId === tournamentId) return false
+              if (m.id && typeof m.id === "string" && (m.id.startsWith(tournamentId) || m.id.startsWith(`badminton-${tournamentId}`))) return false
+              if (targetTourName && m.tournament && m.tournament.trim().toLowerCase() === targetTourName) {
+                const matchCat = (m.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+                if (!targetTourCat || matchCat === targetTourCat) return false
+              }
+              return true
+            })
             localStorage.setItem("gsv_admin_matches_store_v6", JSON.stringify(cleaned))
           }
         } catch (_) {}
@@ -1150,9 +1173,9 @@ export default function AssignedMatchesDashboard() {
             {backendTournaments.length > 0 ? (
               <button
                 type="button"
-                onClick={() => handleDeleteTournament(backendTournaments[0].id)}
+                onClick={() => handleDeleteTournament(activeTournament?.id || backendTournaments[0].id)}
                 className="flex items-center gap-2 border border-rose-500 bg-rose-600/30 px-3.5 py-2 text-xs font-black tracking-wider text-rose-200 transition hover:bg-rose-600 hover:text-white cursor-pointer shadow-lg"
-                title={`Delete active tournament: ${backendTournaments[0].tournamentName}`}
+                title={`Delete active tournament: ${activeTournament?.tournamentName || backendTournaments[0].tournamentName}`}
               >
                 <Trash2 size={15} />
                 DELETE TOURNAMENT
@@ -1362,7 +1385,7 @@ export default function AssignedMatchesDashboard() {
 
             <div className="mt-6 space-y-6">
               {currentBracket.map((round) => (
-                <div key={round.title} className="border border-white/5 bg-black/30 p-4 rounded">
+                <div key={`${activeTournament?.id || "tour"}-${round.title}`} className="border border-white/5 bg-black/30 p-4 rounded">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
                     <span className="text-xs font-black tracking-widest text-[#DFFF00] uppercase font-mono">
                       {round.title} ({round.matches.length} {round.matches.length === 1 ? "Match" : "Matches"})
@@ -1373,7 +1396,17 @@ export default function AssignedMatchesDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {round.matches.map((m) => {
+                    {(() => {
+                      const seen = new Set()
+                      const uniqueMatches = round.matches.filter((m) => {
+                        if (!m?.id || seen.has(m.id)) return false
+                        seen.add(m.id)
+                        if (activeTournament?.id && m.tournamentId && m.tournamentId !== activeTournament.id && !m.id.startsWith(activeTournament.id)) {
+                          return false
+                        }
+                        return true
+                      })
+                      return uniqueMatches.map((m) => {
                       const isComplete = Boolean(m.winner)
                       const isBothKnown = m.player1 !== "TBD" && m.player2 !== "TBD"
                       const existingMatch = allAssignedMatches.find((am) => am.id === m.id)
@@ -1490,7 +1523,8 @@ export default function AssignedMatchesDashboard() {
                           </div>
                         </div>
                       )
-                    })}
+                    })
+                  })()}
                   </div>
                 </div>
               ))}
