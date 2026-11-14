@@ -72,11 +72,18 @@ export default function Schedule() {
   const filteredMatches = matches.filter((match) => {
     const matchesStatus =
       activeFilter === "ALL" || match.status === activeFilter
-    const matchesTournament =
-      activeTournamentFilter === "ALL" ||
-      match.tournamentId === activeTournamentFilter ||
-      match.tournament === activeTournamentFilter ||
-      (match.id && typeof match.id === "string" && match.id.startsWith(activeTournamentFilter))
+    const matchesTournament = (() => {
+      if (activeTournamentFilter === "ALL") return true
+      if (match.tournamentId && match.tournamentId === activeTournamentFilter) return true
+      if (match.id && typeof match.id === "string" && match.id.startsWith(activeTournamentFilter)) return true
+      const selectedTour = tournaments.find((t) => t.id === activeTournamentFilter)
+      if (selectedTour && match.tournament && match.tournament.trim().toLowerCase() === selectedTour.tournamentName.trim().toLowerCase()) {
+        const matchCat = (match.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+        const tourCat = (selectedTour.category?.name || selectedTour.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+        return !tourCat || matchCat === tourCat
+      }
+      return false
+    })()
     return matchesStatus && matchesTournament
   })
 

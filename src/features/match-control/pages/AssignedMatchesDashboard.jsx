@@ -526,23 +526,52 @@ function CreateMatchModal({ isOpen, onClose, onCreated, currentUser, existingMat
   )
 }
 
-function CreateTournamentModal({ isOpen, onClose, onCreated, currentUser }) {
-  const [title, setTitle] = useState("GSV Badminton Championship 2026")
-  const [category, setCategory] = useState("Men's Singles")
-  const [bracketSize, setBracketSize] = useState(8)
-  const [players, setPlayers] = useState([
+const CATEGORY_DEFAULT_PLAYERS = {
+  "Men's Singles": [
     "Arav Kumar", "Rahul Sharma", "Dev Mehta", "Tushar Roy",
     "Karan Singh", "Vikram Sen", "Rohit Verma", "Sameer Patel",
     "Aditya Joshi", "Manish Paul", "Naveen Raj", "Siddharth Das",
-    "Yash Mittal", "Pranav Nair", "Harsh Vardhan", "Deepak Gupta",
-    "Amitabh Sen", "Chirag Shetty", "Lakshya Sen", "Srikanth Kidambi",
-    "Satwiksairaj Rankireddy", "HS Prannoy", "Priyanshu Rajawat", "Kiran George",
-    "Sai Praneeth", "Sourabh Verma", "Subhankar Dey", "Kartikey Gulshan",
-    "Mithun Manjunath", "Alap Mishra", "Meiraba Luwang", "Ayush Shetty"
-  ])
+    "Yash Mittal", "Pranav Nair", "Harsh Vardhan", "Deepak Gupta"
+  ],
+  "Women's Singles": [
+    "P.V. Sindhu", "Saina Nehwal", "Ashmita Chaliha", "Anupama Upadhyaya",
+    "Aakarshi Kashyap", "Malvika Bansod", "Tanvi Sharma", "Unnati Hooda",
+    "Ira Sharma", "Tara Shah", "Tasnim Mir", "Aditi Bhatt",
+    "Shruti Mundada", "Riya Mookerjee", "Gayatri Gopichand", "Rituparna Das"
+  ],
+  "Men's Doubles": [
+    "Satwiksairaj / Chirag", "Arjun / Dhruv", "Krishna / Vishnu", "Hariharan / Ruban",
+    "Shyam / Sanjai", "Achuthanan / Sreejith", "Rohan / Alap", "Pruthvi / Suraj"
+  ],
+  "Women's Doubles": [
+    "Treesa / Gayatri", "Ashwini / Tanisha", "Priya / Shruti", "Simran / Ritika",
+    "Palak / Arul", "Kavya / Khushi", "Radhika / Shikha", "Pooja / Sanjana"
+  ],
+  "Mixed Doubles": [
+    "Rohan / Sikki", "Dhruv / Tanisha", "Sumeeth / Ashwini", "Sathish / Aadya",
+    "Bokka / Maneesha", "Dingku / Priya", "Tarun / Arathi", "Venkat / Juhi"
+  ],
+}
+
+function CreateTournamentModal({ isOpen, onClose, onCreated, currentUser }) {
+  const [title, setTitle] = useState("GSV Badminton Championship 2026 - Men's Singles")
+  const [category, setCategory] = useState("Men's Singles")
+  const [bracketSize, setBracketSize] = useState(8)
+  const [players, setPlayers] = useState(CATEGORY_DEFAULT_PLAYERS["Men's Singles"])
   const [error, setError] = useState(null)
 
   if (!isOpen) return null
+
+  const handleCategoryChange = (newCat) => {
+    setCategory(newCat)
+    if (CATEGORY_DEFAULT_PLAYERS[newCat]) {
+      setPlayers(CATEGORY_DEFAULT_PLAYERS[newCat])
+    }
+    // Update default title if it follows standard template
+    if (!title || title.startsWith("GSV Badminton Championship 2026")) {
+      setTitle(`GSV Badminton Championship 2026 - ${newCat}`)
+    }
+  }
 
   const POWER_OF_TWO_OPTIONS = [
     { size: 2, label: "2 Teams", sub: "Final (1 match)" },
@@ -638,7 +667,7 @@ function CreateTournamentModal({ isOpen, onClose, onCreated, currentUser }) {
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="mt-1 w-full border border-white/10 bg-[#1E293B] px-3 py-2 text-xs text-white outline-none focus:border-[#DFFF00]"
               >
                 <option value="Men's Singles">Men's Singles</option>
@@ -954,11 +983,18 @@ export default function AssignedMatchesDashboard() {
       const matchesSport =
         sportFilter === "ALL" || matchSport === sportFilter.toLowerCase()
 
-      const matchesTournament =
-        tournamentFilter === "ALL" ||
-        match.tournamentId === tournamentFilter ||
-        match.tournament === tournamentFilter ||
-        (match.id && typeof match.id === "string" && match.id.startsWith(tournamentFilter))
+      const matchesTournament = (() => {
+        if (tournamentFilter === "ALL") return true
+        if (match.tournamentId && match.tournamentId === tournamentFilter) return true
+        if (match.id && typeof match.id === "string" && match.id.startsWith(tournamentFilter)) return true
+        const selectedTour = backendTournaments.find((t) => t.id === tournamentFilter)
+        if (selectedTour && match.tournament && match.tournament.trim().toLowerCase() === selectedTour.tournamentName.trim().toLowerCase()) {
+          const matchCat = (match.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+          const tourCat = (selectedTour.category?.name || selectedTour.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+          return !tourCat || matchCat === tourCat
+        }
+        return false
+      })()
 
       const query = search.trim().toLowerCase()
 
@@ -1569,12 +1605,16 @@ export default function AssignedMatchesDashboard() {
                 </button>
                 {backendTournaments.map((tour) => {
                   const isSelected = tournamentFilter === tour.id
-                  const tourMatchesCount = allAssignedMatches.filter(
-                    (m) =>
-                      m.tournamentId === tour.id ||
-                      m.tournament === tour.tournamentName ||
-                      (m.id && typeof m.id === "string" && m.id.startsWith(tour.id))
-                  ).length
+                  const tourCat = (tour.category?.name || tour.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+                  const tourMatchesCount = allAssignedMatches.filter((m) => {
+                    if (m.tournamentId && m.tournamentId === tour.id) return true
+                    if (m.id && typeof m.id === "string" && m.id.startsWith(tour.id)) return true
+                    if (m.tournament && m.tournament.trim().toLowerCase() === tour.tournamentName.trim().toLowerCase()) {
+                      const matchCat = (m.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+                      if (tourCat && matchCat && tourCat === matchCat) return true
+                    }
+                    return false
+                  }).length
                   const catLabel = (tour.category?.name || tour.category || "").toString().replace(/_/g, " ")
 
                   return (
