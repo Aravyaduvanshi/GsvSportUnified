@@ -526,23 +526,52 @@ function CreateMatchModal({ isOpen, onClose, onCreated, currentUser, existingMat
   )
 }
 
-function CreateTournamentModal({ isOpen, onClose, onCreated, currentUser }) {
-  const [title, setTitle] = useState("GSV Badminton Championship 2026")
-  const [category, setCategory] = useState("Men's Singles")
-  const [bracketSize, setBracketSize] = useState(8)
-  const [players, setPlayers] = useState([
+const CATEGORY_DEFAULT_PLAYERS = {
+  "Men's Singles": [
     "Arav Kumar", "Rahul Sharma", "Dev Mehta", "Tushar Roy",
     "Karan Singh", "Vikram Sen", "Rohit Verma", "Sameer Patel",
     "Aditya Joshi", "Manish Paul", "Naveen Raj", "Siddharth Das",
-    "Yash Mittal", "Pranav Nair", "Harsh Vardhan", "Deepak Gupta",
-    "Amitabh Sen", "Chirag Shetty", "Lakshya Sen", "Srikanth Kidambi",
-    "Satwiksairaj Rankireddy", "HS Prannoy", "Priyanshu Rajawat", "Kiran George",
-    "Sai Praneeth", "Sourabh Verma", "Subhankar Dey", "Kartikey Gulshan",
-    "Mithun Manjunath", "Alap Mishra", "Meiraba Luwang", "Ayush Shetty"
-  ])
+    "Yash Mittal", "Pranav Nair", "Harsh Vardhan", "Deepak Gupta"
+  ],
+  "Women's Singles": [
+    "P.V. Sindhu", "Saina Nehwal", "Ashmita Chaliha", "Anupama Upadhyaya",
+    "Aakarshi Kashyap", "Malvika Bansod", "Tanvi Sharma", "Unnati Hooda",
+    "Ira Sharma", "Tara Shah", "Tasnim Mir", "Aditi Bhatt",
+    "Shruti Mundada", "Riya Mookerjee", "Gayatri Gopichand", "Rituparna Das"
+  ],
+  "Men's Doubles": [
+    "Satwiksairaj / Chirag", "Arjun / Dhruv", "Krishna / Vishnu", "Hariharan / Ruban",
+    "Shyam / Sanjai", "Achuthanan / Sreejith", "Rohan / Alap", "Pruthvi / Suraj"
+  ],
+  "Women's Doubles": [
+    "Treesa / Gayatri", "Ashwini / Tanisha", "Priya / Shruti", "Simran / Ritika",
+    "Palak / Arul", "Kavya / Khushi", "Radhika / Shikha", "Pooja / Sanjana"
+  ],
+  "Mixed Doubles": [
+    "Rohan / Sikki", "Dhruv / Tanisha", "Sumeeth / Ashwini", "Sathish / Aadya",
+    "Bokka / Maneesha", "Dingku / Priya", "Tarun / Arathi", "Venkat / Juhi"
+  ],
+}
+
+function CreateTournamentModal({ isOpen, onClose, onCreated, currentUser }) {
+  const [title, setTitle] = useState("GSV Badminton Championship 2026 - Men's Singles")
+  const [category, setCategory] = useState("Men's Singles")
+  const [bracketSize, setBracketSize] = useState(8)
+  const [players, setPlayers] = useState(CATEGORY_DEFAULT_PLAYERS["Men's Singles"])
   const [error, setError] = useState(null)
 
   if (!isOpen) return null
+
+  const handleCategoryChange = (newCat) => {
+    setCategory(newCat)
+    if (CATEGORY_DEFAULT_PLAYERS[newCat]) {
+      setPlayers(CATEGORY_DEFAULT_PLAYERS[newCat])
+    }
+    // Update default title if it follows standard template
+    if (!title || title.startsWith("GSV Badminton Championship 2026")) {
+      setTitle(`GSV Badminton Championship 2026 - ${newCat}`)
+    }
+  }
 
   const POWER_OF_TWO_OPTIONS = [
     { size: 2, label: "2 Teams", sub: "Final (1 match)" },
@@ -638,7 +667,7 @@ function CreateTournamentModal({ isOpen, onClose, onCreated, currentUser }) {
               </label>
               <select
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => handleCategoryChange(e.target.value)}
                 className="mt-1 w-full border border-white/10 bg-[#1E293B] px-3 py-2 text-xs text-white outline-none focus:border-[#DFFF00]"
               >
                 <option value="Men's Singles">Men's Singles</option>
@@ -733,6 +762,8 @@ export default function AssignedMatchesDashboard() {
 
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [sportFilter, setSportFilter] = useState(initialSport)
+  const [tournamentFilter, setTournamentFilter] = useState("ALL")
+  const [selectedTournamentId, setSelectedTournamentId] = useState(null)
   const [search, setSearch] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isTournamentModalOpen, setIsTournamentModalOpen] = useState(false)
@@ -850,12 +881,20 @@ export default function AssignedMatchesDashboard() {
     return []
   }, [backendMatches])
 
+  const activeTournament = useMemo(() => {
+    if (!backendTournaments || backendTournaments.length === 0) return null
+    return (
+      backendTournaments.find((t) => t.id === selectedTournamentId) ||
+      backendTournaments[0]
+    )
+  }, [backendTournaments, selectedTournamentId])
+
   const currentBracket = useMemo(() => {
-    if (backendTournaments && backendTournaments.length > 0) {
-      return buildBracketFromMatches(backendTournaments[0], allAssignedMatches)
+    if (activeTournament) {
+      return buildBracketFromMatches(activeTournament, allAssignedMatches)
     }
     return []
-  }, [backendTournaments, allAssignedMatches])
+  }, [activeTournament, allAssignedMatches])
 
   const liveOccupiedCourtsMap = useMemo(() => {
     const map = new Map()
@@ -944,6 +983,19 @@ export default function AssignedMatchesDashboard() {
       const matchesSport =
         sportFilter === "ALL" || matchSport === sportFilter.toLowerCase()
 
+      const matchesTournament = (() => {
+        if (tournamentFilter === "ALL") return true
+        if (match.tournamentId && match.tournamentId === tournamentFilter) return true
+        if (match.id && typeof match.id === "string" && match.id.startsWith(tournamentFilter)) return true
+        const selectedTour = backendTournaments.find((t) => t.id === tournamentFilter)
+        if (selectedTour && match.tournament && match.tournament.trim().toLowerCase() === selectedTour.tournamentName.trim().toLowerCase()) {
+          const matchCat = (match.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+          const tourCat = (selectedTour.category?.name || selectedTour.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+          return !tourCat || matchCat === tourCat
+        }
+        return false
+      })()
+
       const query = search.trim().toLowerCase()
 
       const matchesSearch =
@@ -961,9 +1013,9 @@ export default function AssignedMatchesDashboard() {
           .filter(Boolean)
           .some((value) => value.toLowerCase().includes(query))
 
-      return matchesStatus && matchesSport && matchesSearch
+      return matchesStatus && matchesSport && matchesTournament && matchesSearch
     })
-  }, [allAssignedMatches, statusFilter, sportFilter, search])
+  }, [allAssignedMatches, statusFilter, sportFilter, tournamentFilter, search])
 
   const liveCount = allAssignedMatches.filter(
     (match) => match.status === "LIVE"
@@ -994,9 +1046,13 @@ export default function AssignedMatchesDashboard() {
     setTimeout(() => setAlertMsg(null), 3500)
   }
 
-  const handleTournamentCreated = (bracket) => {
+  const handleTournamentCreated = (created) => {
+    if (created?.id) {
+      setSelectedTournamentId(created.id)
+      setTournamentFilter(created.id)
+    }
     loadDashboardData()
-    setAlertMsg(`Tournament bracket created! Round 1 matches are now scheduled on courts 1-4.`)
+    setAlertMsg(`Tournament "${created?.tournamentName || 'Bracket'}" created! Round 1 matches are now scheduled on courts.`)
     setTimeout(() => setAlertMsg(null), 4000)
   }
 
@@ -1027,20 +1083,52 @@ export default function AssignedMatchesDashboard() {
     }
     if (window.confirm("Are you sure you want to delete this tournament and cascade delete all its fixtures?")) {
       try {
+        const targetTour = backendTournaments.find((t) => t.id === tournamentId)
+        const targetTourName = targetTour?.tournamentName?.trim().toLowerCase()
+        const targetTourCat = (targetTour?.category?.name || targetTour?.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+
         try {
           await deleteTournamentOnBackend(tournamentId)
         } catch (backendErr) {
           console.warn("Backend delete notice:", backendErr.message)
         }
-        setBackendTournaments((prev) => prev.filter((t) => t.id !== tournamentId))
-        setBackendMatches((prev) => prev.filter((m) => m.tournamentId !== tournamentId && !m.id.startsWith(tournamentId)))
+
+        setBackendTournaments((prev) => {
+          const updated = prev.filter((t) => t.id !== tournamentId)
+          if (selectedTournamentId === tournamentId) {
+            setSelectedTournamentId(updated[0]?.id || null)
+          }
+          return updated
+        })
+
+        setBackendMatches((prev) => prev.filter((m) => {
+          if (m.tournamentId === tournamentId) return false
+          if (m.id && typeof m.id === "string" && (m.id.startsWith(tournamentId) || m.id.startsWith(`badminton-${tournamentId}`))) return false
+          if (targetTourName && m.tournament && m.tournament.trim().toLowerCase() === targetTourName) {
+            const matchCat = (m.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+            if (!targetTourCat || matchCat === targetTourCat) return false
+          }
+          return true
+        }))
+
+        if (tournamentFilter === tournamentId) {
+          setTournamentFilter("ALL")
+        }
         try {
           localStorage.removeItem("gsv_tournament_bracket_store_v2")
           localStorage.removeItem("gsv_active_tournaments_v2")
           const raw = localStorage.getItem("gsv_admin_matches_store_v6")
           if (raw) {
             const parsed = JSON.parse(raw)
-            const cleaned = parsed.filter((m) => m.tournamentId !== tournamentId && !m.id.startsWith(tournamentId))
+            const cleaned = parsed.filter((m) => {
+              if (m.tournamentId === tournamentId) return false
+              if (m.id && typeof m.id === "string" && (m.id.startsWith(tournamentId) || m.id.startsWith(`badminton-${tournamentId}`))) return false
+              if (targetTourName && m.tournament && m.tournament.trim().toLowerCase() === targetTourName) {
+                const matchCat = (m.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+                if (!targetTourCat || matchCat === targetTourCat) return false
+              }
+              return true
+            })
             localStorage.setItem("gsv_admin_matches_store_v6", JSON.stringify(cleaned))
           }
         } catch (_) {}
@@ -1085,9 +1173,9 @@ export default function AssignedMatchesDashboard() {
             {backendTournaments.length > 0 ? (
               <button
                 type="button"
-                onClick={() => handleDeleteTournament(backendTournaments[0].id)}
+                onClick={() => handleDeleteTournament(activeTournament?.id || backendTournaments[0].id)}
                 className="flex items-center gap-2 border border-rose-500 bg-rose-600/30 px-3.5 py-2 text-xs font-black tracking-wider text-rose-200 transition hover:bg-rose-600 hover:text-white cursor-pointer shadow-lg"
-                title={`Delete active tournament: ${backendTournaments[0].tournamentName}`}
+                title={`Delete active tournament: ${activeTournament?.tournamentName || backendTournaments[0].tournamentName}`}
               >
                 <Trash2 size={15} />
                 DELETE TOURNAMENT
@@ -1204,20 +1292,30 @@ export default function AssignedMatchesDashboard() {
                   ACTIVE TOURNAMENT BRACKET & COURT DISPATCH
                 </div>
                 <h2 className="mt-1 text-xl font-black uppercase text-white">
-                  {backendTournaments[0]?.tournamentName || currentBracket[0]?.matches[0]?.tournamentName || "GSV Badminton Championship 2026"}
+                  {activeTournament?.tournamentName || currentBracket[0]?.matches[0]?.tournamentName || "GSV Badminton Championship 2026"}
                 </h2>
+                {activeTournament?.category && (
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold uppercase text-[#DFFF00] bg-[#DFFF00]/10 px-2 py-0.5 rounded border border-[#DFFF00]/30">
+                      {activeTournament.category.toString().replace(/_/g, " ")}
+                    </span>
+                    <span className="text-[10px] font-mono text-gray-400">
+                      Format: Knockout ({activeTournament.participants?.length || 8} Contenders)
+                    </span>
+                  </div>
+                )}
                 <p className="text-xs text-gray-400 mt-0.5">
                   Assign open courts to upcoming tournament fixtures and begin live scorekeeping. Winners advance dynamically across rounds.
                 </p>
               </div>
 
               <div className="flex items-center gap-2">
-                {backendTournaments.length > 0 && (
+                {activeTournament && (
                   <button
                     type="button"
-                    onClick={() => handleDeleteTournament(backendTournaments[0].id)}
+                    onClick={() => handleDeleteTournament(activeTournament.id)}
                     className="flex items-center gap-2 border border-rose-500 bg-rose-600/25 px-4 py-2 text-xs font-black tracking-wider text-rose-300 hover:bg-rose-600 hover:text-white transition cursor-pointer shadow-lg"
-                    title="Delete tournament and all its fixtures"
+                    title={`Delete ${activeTournament.tournamentName} and all its fixtures`}
                   >
                     <Trash2 size={14} />
                     DELETE TOURNAMENT
@@ -1234,28 +1332,60 @@ export default function AssignedMatchesDashboard() {
               </div>
             </div>
 
-            {backendTournaments.length > 1 && (
-              <div className="mt-4 flex flex-wrap gap-2 items-center border border-white/10 bg-black/40 p-3 rounded">
-                <span className="text-[10px] font-mono text-gray-400 uppercase">All Active Tournaments:</span>
-                {backendTournaments.map((tour) => (
-                  <div key={tour.id} className="flex items-center gap-2 border border-white/10 bg-[#1E293B] px-3 py-1.5 rounded text-xs">
-                    <span className="font-bold text-white">{tour.tournamentName}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteTournament(tour.id)}
-                      className="text-rose-400 hover:text-rose-200 ml-1 p-0.5 transition cursor-pointer"
-                      title={`Delete ${tour.tournamentName}`}
+            {backendTournaments.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2.5 items-center border border-white/10 bg-black/40 p-3 rounded">
+                <span className="text-[10px] font-mono text-[#DFFF00] uppercase font-bold tracking-wider mr-1">
+                  Active Tournaments ({backendTournaments.length}):
+                </span>
+                {backendTournaments.map((tour) => {
+                  const isSelected = activeTournament?.id === tour.id
+                  const catLabel = (tour.category?.name || tour.category || "").toString().replace(/_/g, " ")
+                  return (
+                    <div
+                      key={tour.id}
+                      onClick={() => {
+                        setSelectedTournamentId(tour.id)
+                        setTournamentFilter(tour.id)
+                      }}
+                      className={`flex items-center gap-2 border px-3 py-1.5 rounded text-xs font-bold transition cursor-pointer select-none ${
+                        isSelected
+                          ? "border-[#DFFF00] bg-[#DFFF00] text-black shadow-lg shadow-[#DFFF00]/20"
+                          : "border-white/10 bg-[#1E293B] text-gray-300 hover:border-white/30 hover:text-white"
+                      }`}
                     >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                ))}
+                      <Trophy size={13} className={isSelected ? "text-black" : "text-[#DFFF00]"} />
+                      <span>{tour.tournamentName}</span>
+                      {catLabel && (
+                        <span
+                          className={`text-[9px] uppercase px-1.5 py-0.5 rounded font-mono ${
+                            isSelected ? "bg-black/20 text-black font-black" : "bg-white/10 text-gray-400"
+                          }`}
+                        >
+                          {catLabel}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteTournament(tour.id)
+                        }}
+                        className={`ml-1 p-0.5 transition cursor-pointer ${
+                          isSelected ? "text-black/80 hover:text-rose-950" : "text-rose-400 hover:text-rose-200"
+                        }`}
+                        title={`Delete ${tour.tournamentName}`}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             )}
 
             <div className="mt-6 space-y-6">
               {currentBracket.map((round) => (
-                <div key={round.title} className="border border-white/5 bg-black/30 p-4 rounded">
+                <div key={`${activeTournament?.id || "tour"}-${round.title}`} className="border border-white/5 bg-black/30 p-4 rounded">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
                     <span className="text-xs font-black tracking-widest text-[#DFFF00] uppercase font-mono">
                       {round.title} ({round.matches.length} {round.matches.length === 1 ? "Match" : "Matches"})
@@ -1266,7 +1396,17 @@ export default function AssignedMatchesDashboard() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {round.matches.map((m) => {
+                    {(() => {
+                      const seen = new Set()
+                      const uniqueMatches = round.matches.filter((m) => {
+                        if (!m?.id || seen.has(m.id)) return false
+                        seen.add(m.id)
+                        if (activeTournament?.id && m.tournamentId && m.tournamentId !== activeTournament.id && !m.id.startsWith(activeTournament.id)) {
+                          return false
+                        }
+                        return true
+                      })
+                      return uniqueMatches.map((m) => {
                       const isComplete = Boolean(m.winner)
                       const isBothKnown = m.player1 !== "TBD" && m.player2 !== "TBD"
                       const existingMatch = allAssignedMatches.find((am) => am.id === m.id)
@@ -1383,7 +1523,8 @@ export default function AssignedMatchesDashboard() {
                           </div>
                         </div>
                       )
-                    })}
+                    })
+                  })()}
                   </div>
                 </div>
               ))}
@@ -1478,6 +1619,66 @@ export default function AssignedMatchesDashboard() {
                 ))}
               </div>
             </div>
+
+            {/* Tournament Fixtures Filter Bar */}
+            {backendTournaments.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/5">
+                <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mr-1">
+                  Tournament Fixtures:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTournamentFilter("ALL")}
+                  className={`border px-3 py-1.5 text-[10px] font-bold tracking-wider transition cursor-pointer rounded ${
+                    tournamentFilter === "ALL"
+                      ? "border-[#DFFF00] bg-[#DFFF00] text-black"
+                      : "border-white/10 bg-[#162032] text-gray-400 hover:text-white"
+                  }`}
+                >
+                  ALL TOURNAMENTS ({allAssignedMatches.length})
+                </button>
+                {backendTournaments.map((tour) => {
+                  const isSelected = tournamentFilter === tour.id
+                  const tourCat = (tour.category?.name || tour.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+                  const tourMatchesCount = allAssignedMatches.filter((m) => {
+                    if (m.tournamentId && m.tournamentId === tour.id) return true
+                    if (m.id && typeof m.id === "string" && m.id.startsWith(tour.id)) return true
+                    if (m.tournament && m.tournament.trim().toLowerCase() === tour.tournamentName.trim().toLowerCase()) {
+                      const matchCat = (m.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+                      if (tourCat && matchCat && tourCat === matchCat) return true
+                    }
+                    return false
+                  }).length
+                  const catLabel = (tour.category?.name || tour.category || "").toString().replace(/_/g, " ")
+
+                  return (
+                    <button
+                      key={tour.id}
+                      type="button"
+                      onClick={() => setTournamentFilter(tour.id)}
+                      className={`flex items-center gap-1.5 border px-3 py-1.5 text-[10px] font-bold tracking-wider transition cursor-pointer rounded ${
+                        isSelected
+                          ? "border-[#DFFF00] bg-[#DFFF00] text-black"
+                          : "border-white/10 bg-[#162032] text-gray-300 hover:text-white"
+                      }`}
+                    >
+                      <Trophy size={11} className={isSelected ? "text-black" : "text-[#DFFF00]"} />
+                      <span>{tour.tournamentName}</span>
+                      {catLabel && (
+                        <span
+                          className={`text-[8px] uppercase px-1 py-0.2 rounded font-mono ${
+                            isSelected ? "bg-black/20 text-black font-black" : "bg-white/10 text-gray-400"
+                          }`}
+                        >
+                          {catLabel}
+                        </span>
+                      )}
+                      <span className="opacity-80 font-mono">({tourMatchesCount})</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {filteredMatches.length > 0 ? (

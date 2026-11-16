@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from "react"
+import { Trophy } from "lucide-react"
 import ScheduleRow from "./BadmintonScheduleRow"
 import {
   fetchBadmintonSchedule,
+  fetchTournaments,
+  subscribeToTournaments,
   subscribeToBadmintonLiveScores,
   subscribeToMatchDeletion,
   subscribeToMatchUpdates,
@@ -12,16 +15,24 @@ const filters = ["ALL", "LIVE", "UPCOMING", "COMPLETED"]
 
 export default function Schedule() {
   const [activeFilter, setActiveFilter] = useState("ALL")
+  const [activeTournamentFilter, setActiveTournamentFilter] = useState("ALL")
+  const [tournaments, setTournaments] = useState([])
   const [matches, setMatches] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
   const loadMatches = useCallback(async () => {
     try {
-      const data = await fetchBadmintonSchedule(activeFilter)
+      const [data, tList] = await Promise.all([
+        fetchBadmintonSchedule("ALL"),
+        fetchTournaments(),
+      ])
       if (Array.isArray(data)) {
         setMatches(data)
       } else {
         setMatches([])
+      }
+      if (Array.isArray(tList)) {
+        setTournaments(tList)
       }
     } catch (e) {
       console.warn("Failed to load badminton schedule:", e)
@@ -29,11 +40,12 @@ export default function Schedule() {
     } finally {
       setIsLoading(false)
     }
-  }, [activeFilter])
+  }, [])
 
   useEffect(() => {
     loadMatches()
 
+    const unsubTourn = subscribeToTournaments(() => loadMatches())
     const unsubLive = subscribeToBadmintonLiveScores(() => loadMatches())
     const unsubDel = subscribeToMatchDeletion(({ matchId }) => {
       if (matchId) {
@@ -48,6 +60,7 @@ export default function Schedule() {
     const interval = setInterval(loadMatches, 4000)
 
     return () => {
+      unsubTourn()
       unsubLive()
       unsubDel()
       unsubMatches()
@@ -56,9 +69,23 @@ export default function Schedule() {
     }
   }, [loadMatches])
 
-  const filteredMatches = matches.filter(
-    (match) => activeFilter === "ALL" || match.status === activeFilter
-  )
+  const filteredMatches = matches.filter((match) => {
+    const matchesStatus =
+      activeFilter === "ALL" || match.status === activeFilter
+    const matchesTournament = (() => {
+      if (activeTournamentFilter === "ALL") return true
+      if (match.tournamentId && match.tournamentId === activeTournamentFilter) return true
+      if (match.id && typeof match.id === "string" && match.id.startsWith(activeTournamentFilter)) return true
+      const selectedTour = tournaments.find((t) => t.id === activeTournamentFilter)
+      if (selectedTour && match.tournament && match.tournament.trim().toLowerCase() === selectedTour.tournamentName.trim().toLowerCase()) {
+        const matchCat = (match.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+        const tourCat = (selectedTour.category?.name || selectedTour.category || "").toString().toUpperCase().replace(/[\s_']/g, "")
+        return !tourCat || matchCat === tourCat
+      }
+      return false
+    })()
+    return matchesStatus && matchesTournament
+  })
 
   return (
     <section
@@ -87,6 +114,54 @@ export default function Schedule() {
               : "Every fixture. Every court. Follow the road to the championship."}
           </p>
         </div>
+
+        {/* Tournament Selector Filter */}
+        {tournaments.length > 1 && (
+          <div className="mb-4 flex flex-wrap gap-2 items-center">
+            <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest mr-1">
+              Tournament:
+            </span>
+            <button
+              type="button"
+              onClick={() => setActiveTournamentFilter("ALL")}
+              className={`border px-3.5 py-2 text-[10px] font-bold tracking-wider transition cursor-pointer rounded ${
+                activeTournamentFilter === "ALL"
+                  ? "border-[#DFFF00] bg-[#DFFF00] text-black"
+                  : "border-white/10 bg-[#162032] text-gray-400 hover:text-white"
+              }`}
+            >
+              ALL TOURNAMENTS
+            </button>
+            {tournaments.map((t) => {
+              const isSelected = activeTournamentFilter === t.id
+              const catName = (t.category?.name || t.category || "").toString().replace(/_/g, " ")
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => setActiveTournamentFilter(t.id)}
+                  className={`flex items-center gap-1.5 border px-3.5 py-2 text-[10px] font-bold tracking-wider transition cursor-pointer rounded ${
+                    isSelected
+                      ? "border-[#DFFF00] bg-[#DFFF00] text-black"
+                      : "border-white/10 bg-[#162032] text-gray-300 hover:text-white"
+                  }`}
+                >
+                  <Trophy size={12} className={isSelected ? "text-black" : "text-[#DFFF00]"} />
+                  <span>{t.tournamentName}</span>
+                  {catName && (
+                    <span
+                      className={`text-[9px] uppercase px-1 py-0.2 rounded font-mono ${
+                        isSelected ? "bg-black/20 text-black font-black" : "bg-white/10 text-gray-400"
+                      }`}
+                    >
+                      {catName}
+                    </span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="mb-6 flex flex-wrap gap-2">
